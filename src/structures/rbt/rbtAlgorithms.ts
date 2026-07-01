@@ -73,3 +73,40 @@ export const findPathToValue = (node: RBNode | null, value: number): RBNode[] =>
 
   return path;
 };
+
+export const findPathToId = (node: RBNode | null, id: string): RBNode[] => {
+  const path: RBNode[] = [];
+  const traverse = (current: RBNode | null): boolean => {
+    if (!current) return false;
+    path.push(current);
+    if (current.id === id) return true;
+    if (traverse(current.left) || traverse(current.right)) {
+      return true;
+    }
+    path.pop();
+    return false;
+  };
+  traverse(node);
+  return path;
+};
+
+export const attachRotatedSubtreeRbt = (
+  root: RBNode,
+  path: RBNode[],
+  index: number,
+  replacement: RBNode
+): RBNode => {
+  if (index === 0) {
+    return replacement;
+  }
+
+  const parent = path[index - 1];
+  const target = path[index];
+  if (parent.left?.id === target.id) {
+    parent.left = replacement;
+  } else if (parent.right?.id === target.id) {
+    parent.right = replacement;
+  }
+
+  return root;
+};

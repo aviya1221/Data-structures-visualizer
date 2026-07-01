@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Canvas from '../components/CanvasNew'
+import Canvas from '../components/Canvas'
 import { ControlPanel } from '../components/ControlPanelNew'
 import StepLog from '../components/StepLog'
 import TheoryPanel from '../components/TheoryPanel'
@@ -12,6 +12,7 @@ const structureTabs = [
   { id: 'binomial', label: 'עץ בינומי' },
   { id: 'bplus', label: 'עץ B+' },
   { id: 'skiplist', label: 'רשימת דילוג דטרמיניסטית' },
+  { id: 'trie', label: 'עץ אחזור (Trie)' },
   { id: 'suffix', label: 'עץ סיומת' },
 ]
 
@@ -66,7 +67,7 @@ const Visualizer = () => {
         </aside>
 
         <section className="flex flex-1 flex-col gap-4 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/90 shadow-inner">
-            <div className="flex-1 overflow-auto p-2">
+            <div className="flex-1 p-2" style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', whiteSpace: 'nowrap' }}>
               <Canvas activeTab={activeTab} />
             </div>
         </section>

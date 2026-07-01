@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../app/store';
 import { generateAvlInsertAnimations } from '../structures/avl/avlAnimationsNew';
 import { generateRbtInsertAnimations } from '../structures/rbt/rbtAnimationsNew';
+import { generateSkipListInsertAnimations } from '../structures/skiplist/skiplistAnimations';
+import { createEmptySkipList } from '../structures/skiplist/skiplistAlgorithms';
+import { generateHeapInsertAnimations, generateHeapExtractMaxAnimations } from '../structures/heap/heapAnimations';
+import { generateBinomialInsertAnimations, generateBinomialExtractMinAnimations } from '../structures/binomial/binomialAnimations';
+import { generateBPlusInsertAnimations } from '../structures/bplus/bplusAnimations';
+import { generateTrieInsertAnimations } from '../structures/trie/trieAnimations';
 import { findTreeNodeByValue } from '../structures/tree/utils';
 import type { TreeNode } from '../structures/types';
 
@@ -67,8 +73,80 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
   };
 
   const handleInsert = () => {
+    if (activeTab === 'trie') {
+      const sanitized = inputValue.trim().toLowerCase();
+      if (!sanitized) {
+        handleToast('נא להזין מילה חוקית');
+        return;
+      }
+      if (!/^[a-zA-Z]+$/.test(sanitized)) {
+        handleToast('נא להזין אותיות באנגלית בלבד');
+        return;
+      }
+      const listNodes = (currentTree as any)?.trieNodes ?? [];
+      const rootId = (currentTree as any)?.rootId ?? null;
+      const newSteps = generateTrieInsertAnimations(listNodes, rootId, sanitized);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
+
     const val = parseInt(inputValue, 10);
     if (isNaN(val)) return;
+
+    if (activeTab === 'skiplist') {
+      const listNodes = (currentTree as any)?.skipListNodes ?? createEmptySkipList();
+      const exists = listNodes.some((n: any) => n.value === val && !n.isHead && !n.isTail);
+      if (exists) {
+        handleToast('הערך כבר קיים במבנה');
+        return;
+      }
+      const newSteps = generateSkipListInsertAnimations(listNodes, val);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
+
+    if (activeTab === 'heap') {
+      const heap = (currentTree as any)?.heapArray ?? [];
+      if (heap.some((n: any) => n.value === val)) {
+        handleToast('הערך כבר קיים במבנה');
+        return;
+      }
+      const newSteps = generateHeapInsertAnimations(heap, val);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
+
+    if (activeTab === 'binomial') {
+      const forest = (currentTree as any)?.binomialTrees ?? [];
+      const existsInBinomialForest = (nodes: any[], target: number): boolean => {
+        return nodes.some(n => n.value === target || existsInBinomialForest(n.children, target));
+      };
+      if (existsInBinomialForest(forest, val)) {
+        handleToast('הערך כבר קיים במבנה');
+        return;
+      }
+      const newSteps = generateBinomialInsertAnimations(forest, val);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
+
+    if (activeTab === 'bplus') {
+      const listNodes = (currentTree as any)?.bplusNodes ?? [];
+      const rootId = (currentTree as any)?.rootId ?? null;
+      const exists = listNodes.some((n: any) => n.keys.includes(val));
+      if (exists) {
+        handleToast('הערך כבר קיים במבנה');
+        return;
+      }
+      const newSteps = generateBPlusInsertAnimations(listNodes, rootId, val, 3);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
 
     if (findTreeNodeByValue(currentTree, val)) {
       handleToast('הערך כבר קיים במבנה');
@@ -80,6 +158,26 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
       : generateAvlInsertAnimations(currentTree as any, val);
     enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
     setInputValue('');
+  };
+
+  const handleExtractMax = () => {
+    const heap = (currentTree as any)?.heapArray ?? [];
+    if (heap.length === 0) {
+      handleToast('הערימה ריקה');
+      return;
+    }
+    const newSteps = generateHeapExtractMaxAnimations(heap);
+    enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+  };
+
+  const handleExtractMin = () => {
+    const forest = (currentTree as any)?.binomialTrees ?? [];
+    if (forest.length === 0) {
+      handleToast('הערימה ריקה');
+      return;
+    }
+    const newSteps = generateBinomialExtractMinAnimations(forest);
+    enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
   };
 
   const handlePlayPause = () => {
@@ -98,16 +196,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <input
-            type="number"
+            type={activeTab === 'trie' ? 'text' : 'number'}
             dir="ltr"
-            inputMode="numeric"
+            inputMode={activeTab === 'trie' ? 'text' : 'numeric'}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleInsert();
             }}
             disabled={isAnimating}
-            placeholder="הזן ערך"
+            placeholder={activeTab === 'trie' ? 'הזן מילה' : 'הזן ערך'}
             className="h-10 min-w-[120px] rounded-2xl border border-slate-700 bg-slate-950 px-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <button
@@ -117,6 +215,24 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
           >
             הכנס
           </button>
+          {activeTab === 'heap' && (
+            <button
+              onClick={handleExtractMax}
+              disabled={isAnimating}
+              className="h-10 rounded-2xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              הפקת מקסימום
+            </button>
+          )}
+          {activeTab === 'binomial' && (
+            <button
+              onClick={handleExtractMin}
+              disabled={isAnimating}
+              className="h-10 rounded-2xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              הפקת מינימום
+            </button>
+          )}
           <div className="flex h-10 items-center gap-3 rounded-2xl border border-slate-700 bg-slate-950 px-3">
             <label className="text-sm text-slate-300">מהירות אנימציה</label>
             <input
@@ -137,14 +253,14 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
             onClick={() => setPlayMode(playMode === 'auto' ? 'manual' : 'auto')}
             className="h-10 rounded-2xl border border-slate-700 bg-slate-800 px-4 text-sm font-medium text-slate-100 transition hover:bg-slate-700"
           >
-            {playMode === 'auto' ? 'מצב רצף' : 'מצב שלב-אחר-שלב'}
+            {playMode === 'auto' ? 'מצב רצף' : 'מצב ידני'}
           </button>
           <button
             onClick={undo}
             disabled={isAnimating}
             className="h-10 rounded-2xl border border-slate-700 bg-slate-800 px-4 text-sm font-medium text-slate-100 disabled:cursor-not-allowed disabled:opacity-50 transition hover:bg-slate-700"
           >
-            ביטול פעולה אחרונה
+            ביטול
           </button>
           <button
             onClick={handlePlayPause}

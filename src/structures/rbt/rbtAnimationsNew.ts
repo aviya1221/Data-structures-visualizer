@@ -6,8 +6,9 @@ import {
   isRed,
   rotateLeft,
   rotateRight,
-  replaceSubtree,
   findPathToValue,
+  findPathToId,
+  attachRotatedSubtreeRbt,
 } from './rbtAlgorithms';
 
 export const generateRbtInsertAnimations = (
@@ -29,13 +30,28 @@ export const generateRbtInsertAnimations = (
     stepType: 'insert',
   });
 
-  let path = insertedPath;
+  if (!insertedNode) {
+    return steps;
+  }
 
-  while (path.length >= 2 && path[path.length - 2].color === 'red') {
+  let activeId = insertedNode.id;
+  let path = findPathToId(currentTree, activeId);
+
+  while (path.length >= 2) {
     const currentNode = path[path.length - 1];
     const parent = path[path.length - 2];
+    
+    // If the parent is not red, there is no violation, we are done
+    if (parent.color !== 'red') {
+      break;
+    }
+
     const grandparent = path[path.length - 3];
-    if (!grandparent) break;
+    // If there is no grandparent, it means parent is the root.
+    // The root will be colored black at the end of insertion anyway.
+    if (!grandparent) {
+      break;
+    }
 
     const uncle = grandparent.left?.id === parent.id ? grandparent.right : grandparent.left;
     const uncleIsRed = isRed(uncle);
@@ -44,81 +60,92 @@ export const generateRbtInsertAnimations = (
     const currentIsLeft = parent.left?.id === currentNode.id;
 
     if (uncleIsRed) {
+      // Case 1: Recolor
       parent.color = 'black';
       if (uncle) uncle.color = 'black';
       grandparent.color = 'red';
 
       steps.push({
         id: `step-2-recolor-${parent.id}`,
-        message: `תיקון צבעים case 1 — הורדת צבע הורה ועלם, העלאת צבע סב`,
+        message: `תיקון צבעים case 1 — צביעת הורה (${parent.value}) ועלם (${uncle?.value ?? ''}) לשחור, והעלאת צבע סב (${grandparent.value}) לאדום`,
         rootNode: cloneTree(currentTree),
         highlightedNodeIds: [parent.id, grandparent.id, ...(uncle ? [uncle.id] : [])],
         stepType: 'recolor',
       });
 
-      path = findPathToValue(currentTree, newValue);
+      // Move active node to grandparent and propagate up
+      activeId = grandparent.id;
+      path = findPathToId(currentTree, activeId);
       continue;
     }
 
-    let caseLabel = '';
+    // Case 2: Double rotation preparation (LR / RL)
     if (parentIsLeft && currentIsRight) {
-      caseLabel = 'LR';
       const rotatedParent = rotateLeft(parent);
-      currentTree = replaceSubtree(currentTree, parent.id, rotatedParent) as RBNode;
+      currentTree = attachRotatedSubtreeRbt(currentTree, path, path.length - 2, rotatedParent);
+      
       steps.push({
-        id: `step-3-case2-${parent.id}`,
-        message: `מכין סיבוב LR — סיבוב הורה שמאלה כדי ליישר את המסלול`,
+        id: `step-3-rotation-LR-${parent.id}`,
+        message: `סיבוב LR חלק 1 — סיבוב שמאלה על הורה (${parent.value}) כדי ליישר את המסלול`,
         rootNode: cloneTree(currentTree),
         highlightedNodeIds: [currentNode.id, parent.id, grandparent.id],
         stepType: 'rotation',
-        rotationCase: caseLabel,
+        rotationCase: 'LR',
       });
-      path = findPathToValue(currentTree, newValue);
+      
+      activeId = parent.id;
+      path = findPathToId(currentTree, activeId);
       continue;
     }
 
     if (!parentIsLeft && currentIsLeft) {
-      caseLabel = 'RL';
       const rotatedParent = rotateRight(parent);
-      currentTree = replaceSubtree(currentTree, parent.id, rotatedParent) as RBNode;
+      currentTree = attachRotatedSubtreeRbt(currentTree, path, path.length - 2, rotatedParent);
+      
       steps.push({
-        id: `step-3-case2-${parent.id}`,
-        message: `מכין סיבוב RL — סיבוב הורה ימינה כדי ליישר את המסלול`,
+        id: `step-3-rotation-RL-${parent.id}`,
+        message: `סיבוב RL חלק 1 — סיבוב ימינה על הורה (${parent.value}) כדי ליישר את המסלול`,
         rootNode: cloneTree(currentTree),
         highlightedNodeIds: [currentNode.id, parent.id, grandparent.id],
         stepType: 'rotation',
-        rotationCase: caseLabel,
+        rotationCase: 'RL',
       });
-      path = findPathToValue(currentTree, newValue);
+      
+      activeId = parent.id;
+      path = findPathToId(currentTree, activeId);
       continue;
     }
 
+    // Case 3: Single rotation + recolor (LL / RR)
+    let caseLabel = '';
     if (parentIsLeft) {
       caseLabel = 'LL';
       const rotatedGrandparent = rotateRight(grandparent);
-      currentTree = replaceSubtree(currentTree, grandparent.id, rotatedGrandparent) as RBNode;
+      currentTree = attachRotatedSubtreeRbt(currentTree, path, path.length - 3, rotatedGrandparent);
       parent.color = 'black';
       grandparent.color = 'red';
     } else {
       caseLabel = 'RR';
       const rotatedGrandparent = rotateLeft(grandparent);
-      currentTree = replaceSubtree(currentTree, grandparent.id, rotatedGrandparent) as RBNode;
+      currentTree = attachRotatedSubtreeRbt(currentTree, path, path.length - 3, rotatedGrandparent);
       parent.color = 'black';
       grandparent.color = 'red';
     }
 
     steps.push({
       id: `step-4-rotation-${caseLabel}-${grandparent.id}`,
-      message: `סיבוב ${caseLabel} הושלם — שמירת צבעים מתאימים`,
+      message: `סיבוב ${caseLabel} הושלם על סב (${grandparent.value}) — צביעת הורה (${parent.value}) לשחור וסב לאדום`,
       rootNode: cloneTree(currentTree),
       highlightedNodeIds: [parent.id, grandparent.id],
       stepType: 'rotation',
       rotationCase: caseLabel,
     });
 
-    path = findPathToValue(currentTree, newValue);
+    // Recalculate path to check final layout state
+    path = findPathToId(currentTree, activeId);
   }
 
+  // Ensure root is colored black
   if (currentTree) {
     currentTree.color = 'black';
   }
