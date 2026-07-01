@@ -1,75 +1,71 @@
-# React + TypeScript + Vite
+# מציג ויזואלי של מבני נתונים (Data Structures Visualizer)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+אפליקציה אינטראקטיבית מודרנית שנבנתה ב-React, TypeScript ו-Tailwind CSS המציגה ויזואליזציה מונפשת, צעד אחר צעד, של מבני נתונים מתקדמים בהתאם לחוקי הקורס וסיכומי ההרצאות. האפליקציה משתמשת ב-Framer Motion כדי להנפיש החלקת איברים ושינויי מבנה בצורה חלקה ונקייה ללא הריסה ובנייה מחדש של אלמנטים.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 מבני הנתונים הנתמכים
 
-## React Compiler
+### 1. עץ AVL
+* **חוקי איזון**: עץ חיפוש בינארי השומר על הפרש גובה של לכל היותר 1 לכל צומת.
+* **ויזואליזציה**: גורם האיזון והגובה של כל צומת מופיעים בבירור כבלון נלווה בולט.
+* **רוטציות**: הדמיה מלאה של רוטציות חד-צדדיות (LL, RR) ודו-צדדיות (LR, RL) עם החלקת צמתים למקומם החדש.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. עץ אדום-שחור (Red-Black Tree)
+* **חוקי איזון**: עץ חיפוש בינארי מאוזן שבו השורש שחור, עלים ריקים (NIL) שחורים, ולצומת אדום יש רק בנים שחורים.
+* **חוקי הכנסה**: בדיקת דוד אדום (צביעה מחדש ופעפוע למעלה) או דוד שחור/NIL (רוטציה והחלפת צבעים).
 
-## Expanding the ESLint configuration
+### 3. ערימת מקסימום (Max-Heap)
+* **ייצוג**: מיושם באמצעות מערך (Array-backed) המבוסס על אינדקס 1 (שורש ב-1, בנים ב-`2i` ו-`2i+1`, הורה ב-`i/2`).
+* **ויזואליזציה**: מציג במקביל גם את ייצוג העץ הדו-מימדי וגם את מבנה המערך הליניארי בתחתית המסך.
+* **פעולות**: תמיכה בהכנסה והוצאת איבר מקסימלי עם אנימציית פעפוע (Heapify) אינטראקטיבית.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 4. ערימה בינומית (Binomial Heap)
+* **איחוד ומיזוג**: שילוב של יער עצי בינומי השומרים על תכונת Min-Heap.
+* **מניעת כפילויות**: מיזוג עץ בעל ערך שורש גדול יותר כבן שמאלי ביותר תחת השורש הקטן יותר ליצירת דרגה הבאה.
+* **ויזואליזציה ללא חפיפות**: אלגוריתם חלוקת גבולות (Subdivision Layout) המונע חפיפה של ענפים ועלים.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 5. עץ B+ (B+ Tree)
+* **מבנה דו-שורה**: כל גוש מיוצג בדיוק כמו בסיכומי השיעור (שורה עליונה למפתחות, שורה תחתונה לתאי מצביע עם נקודות `•`).
+* **קישוריות עלים**: חצים ירוקים מקווקווים המקשרים בין עלי העץ מימין לשמאל לתמיכה בשאילתות טווח (Range Queries).
+* **חוקי מפתח מינימום**: המפתחות בצמתים הפנימיים מייצגים בדיוק את מפתח המינימום של תתי-העצים שלהם.
+* **איזון**: forced LTR המציג מפתחות בסדר עולה משמאל לימין.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 6. רשימת דילוג דטרמיניסטית (Deterministic Skip List)
+* **חוקי קידום**: אינדוקציה דטרמיניסטית שבה כל איבר שני או שלישי מקודם לרמה שמעליו.
+* **תיקון שלשות**: קידום אוטומטי ומדורג של האיבר האמצעי במידה ונוצר רצף של 3 איברים ברמה מסוימת שלא קיימים מעליה.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 7. עץ אחזור (Trie)
+* **ייצוג מילים**: עץ חיפוש מילים שבו כל נתיב מהשורש מייצג מחרוזת אותיות.
+* **סימון סוף מילה**: שימוש בתו המיוחד `$` כצומת מלבני אדום נפרד בסוף כל מילה.
+* **ויזואליזציה**: תצוגה מבוזרת מונעת חפיפות עם תמיכה מובנית בזום וגרירה (Zoom & Pan).
 
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🛠️ טכנולוגיות מרכזיות
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+* **React 18** - ממשק משתמש קומפוננטלי.
+* **TypeScript** - אבטחת טיפוסים מלאה ותאימות קוד קפדנית.
+* **Framer Motion** - הנפשות ושימוש ב-`layoutId` המעניק אפקט החלקה לצמתים העוברים בין שלבים.
+* **Zustand** - ניהול תור האנימציות והשלבים, תמיכה בניגון אוטומטי, שליטה במהירות ומעבר שלב-שלב.
+* **Tailwind CSS** - עיצוב מתקדם, כהה ומותאם אישית (Dark Mode).
+* **React Zoom Pan Pinch** - תמיכה בזום וגרירת קנבס ברשימת דילוג וב-Trie.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
 
-```
+## 💻 הרצה מקומית
+
+1. **התקנת תלויות**:
+   ```bash
+   npm install
+   ```
+
+2. **הרצה במצב פיתוח**:
+   ```bash
+   npm run dev
+   ```
+
+3. **בנייה לפרודקשן**:
+   ```bash
+   npm run build
+   ```
