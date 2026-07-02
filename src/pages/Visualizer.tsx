@@ -9,9 +9,9 @@ const structureTabs = [
   { id: 'avl', label: 'עץ AVL' },
   { id: 'rbt', label: 'עץ אדום-שחור' },
   { id: 'heap', label: 'עץ ערמה' },
-  { id: 'binomial', label: 'עץ בינומי' },
+  { id: 'binomial', label: 'ערמה בינומית' },
   { id: 'bplus', label: 'עץ B+' },
-  { id: 'skiplist', label: 'רשימת דילוג דטרמיניסטית' },
+  { id: 'skiplist', label: 'רשימת דילוג' },
   { id: 'trie', label: 'עץ אחזור (Trie)' },
   { id: 'suffix', label: 'עץ סיומת' },
 ]
@@ -67,7 +67,7 @@ const Visualizer = () => {
         </aside>
 
         <section className="flex flex-1 flex-col gap-4 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/90 shadow-inner">
-            <div className="flex-1 p-2" style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', whiteSpace: 'nowrap' }}>
+            <div className="flex-1 p-2 overflow-auto relative">
               <Canvas activeTab={activeTab} />
             </div>
         </section>

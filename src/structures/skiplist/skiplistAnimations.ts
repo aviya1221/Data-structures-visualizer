@@ -245,7 +245,7 @@ export const generateSkipListInsertAnimations = (
 
   steps.push({
     id: `sl-complete-${value}`,
-    message: `הפעולה הושלמה בהצלחה — רשימת הדילוג הדטרמיניסטית מאוזנת לפי כללי הספר (2 או 3 צמתים בין כל קידום)`,
+    message: `הפעולה הושלמה בהצלחה — רשימת הדילוג מאוזנת לפי כללי הספר (2 או 3 צמתים בין כל קידום)`,
     rootNode: createDummyRoot(mapToFlatArray(nodesMap)),
     stepType: 'complete',
   });

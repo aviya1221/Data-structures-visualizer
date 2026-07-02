@@ -33,7 +33,7 @@ const TheoryPanel = ({ activeTab }: TheoryPanelProps) => {
           <div>
             <h2 className="mb-4 text-2xl font-semibold text-white">עקרונות רשימת דילוג</h2>
             <ul className="list-disc space-y-3 pr-4 text-base leading-7 text-slate-200">
-              <li>רשימת דילוג דטרמיניסטית 1-2-3 (מבוססת ספרי קורס).</li>
+              <li>רשימת דילוג 1-2-3 (מבוססת ספרי קורס).</li>
               <li>כל רמה i מהווה תת-רשימה ממוינת של הרמה מתחתיה i-1.</li>
               <li>מרווח האיברים ללא הורה בין כל שני צמתים מקודמים ברמה מעל חייב להיות 1 או 2 (כלומר, כל איבר שני או שלישי מועלה לרמה מעל).</li>
               <li><strong>חוק הכנסה:</strong> אם הכנסת איבר יוצרת רצף של בדיוק 3 איברים עוקבים ללא הורה ברמה מעל, הצומת האמצעי מקודם למעלה.</li>
@@ -137,6 +137,26 @@ const TheoryPanel = ({ activeTab }: TheoryPanelProps) => {
               <div>חיפוש מילה באורך m: O(m)</div>
               <div>הכנסת מילה באורך m: O(m)</div>
               <div>מחיקה: O(m)</div>
+            </div>
+          </div>
+        </>
+      ) : activeTab === 'suffix' ? (
+        <>
+          <div>
+            <h2 className="mb-4 text-2xl font-semibold text-white">עקרונות עץ סיומת (Suffix Tree)</h2>
+            <ul className="list-disc space-y-3 pr-4 text-base leading-7 text-slate-200">
+              <li>מבנה נתונים המכיל את כל הסיומות של מחרוזת נתונה.</li>
+              <li>עבור מחרוזת באורך n, מוכנסות לעץ n סיומות שונות.</li>
+              <li><strong>סמל מיוחד $:</strong> כל סיומת מסתיימת בתו המיוחד $ כעלה נפרד, מה שמבטיח שכל סיומת תסתיים בעלה ולא תהיה תת-נתיב פנימי.</li>
+              <li>מיועד לחיפוש מהיר של תת-מחרוזות בטקסט ארוך בזמן התלוי באורך השאילתה בלבד.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-xl font-semibold text-white">סיבוכיות זמן</h3>
+            <div className="space-y-2 rounded-3xl bg-slate-950/80 p-4 text-sm text-slate-200">
+              <div>חיפוש תת-מחרוזת באורך m: O(m)</div>
+              <div>בניית העץ למחרוזת באורך n: O(n)</div>
             </div>
           </div>
         </>

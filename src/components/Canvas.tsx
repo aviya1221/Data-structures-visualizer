@@ -8,6 +8,7 @@ import MaxHeapCanvas from './MaxHeapCanvas';
 import BinomialHeapCanvas from './BinomialHeapCanvas';
 import BPlusTreeCanvas from './BPlusTreeCanvas';
 import TrieCanvas from './TrieCanvas';
+import SuffixTreeCanvas from './SuffixTreeCanvas';
 
 const NODE_SIZE = 64; // px (used for tree circles)
 const VERTICAL_SPACING = 100; // px (used for tree levels)
@@ -159,6 +160,9 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
   }
   if (activeTab === 'trie') {
     return <TrieCanvas />;
+  }
+  if (activeTab === 'suffix') {
+    return <SuffixTreeCanvas />;
   }
 
   const { animationQueue, stepIndex, currentRoot } = useAppStore();

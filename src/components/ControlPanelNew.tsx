@@ -8,6 +8,7 @@ import { generateHeapInsertAnimations, generateHeapExtractMaxAnimations } from '
 import { generateBinomialInsertAnimations, generateBinomialExtractMinAnimations } from '../structures/binomial/binomialAnimations';
 import { generateBPlusInsertAnimations } from '../structures/bplus/bplusAnimations';
 import { generateTrieInsertAnimations } from '../structures/trie/trieAnimations';
+import { generateSuffixTreeAnimations } from '../structures/suffix/suffixAnimations';
 import { findTreeNodeByValue } from '../structures/tree/utils';
 import type { TreeNode } from '../structures/types';
 
@@ -86,6 +87,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
       const listNodes = (currentTree as any)?.trieNodes ?? [];
       const rootId = (currentTree as any)?.rootId ?? null;
       const newSteps = generateTrieInsertAnimations(listNodes, rootId, sanitized);
+      enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setInputValue('');
+      return;
+    }
+
+    if (activeTab === 'suffix') {
+      const sanitized = inputValue.trim().toLowerCase();
+      if (!sanitized) {
+        handleToast('נא להזין מחרוזת חוקית');
+        return;
+      }
+      if (!/^[a-zA-Z]+$/.test(sanitized)) {
+        handleToast('נא להזין אותיות באנגלית בלבד');
+        return;
+      }
+      const newSteps = generateSuffixTreeAnimations(sanitized);
       enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
       setInputValue('');
       return;
@@ -196,16 +213,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <input
-            type={activeTab === 'trie' ? 'text' : 'number'}
+            type={activeTab === 'trie' || activeTab === 'suffix' ? 'text' : 'number'}
             dir="ltr"
-            inputMode={activeTab === 'trie' ? 'text' : 'numeric'}
+            inputMode={activeTab === 'trie' || activeTab === 'suffix' ? 'text' : 'numeric'}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleInsert();
             }}
             disabled={isAnimating}
-            placeholder={activeTab === 'trie' ? 'הזן מילה' : 'הזן ערך'}
+            placeholder={
+              activeTab === 'trie'
+                ? 'הזן מילה'
+                : activeTab === 'suffix'
+                ? 'הזן מחרוזת'
+                : 'הזן ערך'
+            }
             className="h-10 min-w-[120px] rounded-2xl border border-slate-700 bg-slate-950 px-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <button
