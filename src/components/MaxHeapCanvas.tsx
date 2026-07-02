@@ -196,7 +196,7 @@ export const MaxHeapCanvas: React.FC = () => {
                   touchAction: 'none',
                 }}
               >
-                <span className="font-extrabold text-base" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                <span dir="ltr" className="font-extrabold text-base" style={{ direction: 'ltr', unicodeBidi: 'embed', fontFamily: 'Outfit, sans-serif' }}>
                   {t.node.value}
                 </span>
                 <span className="absolute -bottom-5 text-xxs font-bold text-slate-500">
@@ -252,10 +252,10 @@ export const MaxHeapCanvas: React.FC = () => {
                   userSelect: 'none',
                 }}
               >
-                <span className="font-extrabold text-sm" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                <span dir="ltr" className="font-extrabold text-sm" style={{ direction: 'ltr', unicodeBidi: 'embed', fontFamily: 'Outfit, sans-serif' }}>
                   {a.node.value}
                 </span>
-                <span className="absolute -bottom-5 text-xxs font-bold text-slate-500">
+                <span dir="ltr" className="absolute -bottom-5 text-xxs font-bold text-slate-500" style={{ direction: 'ltr' }}>
                   [{a.index}]
                 </span>
               </motion.div>

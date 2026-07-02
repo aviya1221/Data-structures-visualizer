@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { useAppStore } from '../app/store';
 import type { TreeNode } from '../structures/types';
 import type { SkipListNode } from '../structures/skiplist/types';
@@ -10,13 +9,7 @@ import BPlusTreeCanvas from './BPlusTreeCanvas';
 import TrieCanvas from './TrieCanvas';
 import SuffixTreeCanvas from './SuffixTreeCanvas';
 
-const NODE_SIZE = 64; // px (used for tree circles)
-const VERTICAL_SPACING = 100; // px (used for tree levels)
-const SVG_HEIGHT = 520;
-
 // Dimensions for Skip List boxes
-const SKIP_NODE_WIDTH = 58;
-const SKIP_NODE_HEIGHT = 38;
 
 interface FlatNode {
   node: TreeNode;
@@ -34,9 +27,17 @@ interface Edge {
  * Calculates absolute coordinates for binary trees (AVL, RBT) starting from a fixed center root.
  * Ensures stable positions, no NaN, no layout shifting.
  */
-const computeFlatLayout = (root: TreeNode | null) => {
+const computeFlatLayout = (root: TreeNode | null, isMobile: boolean) => {
   const flat: FlatNode[] = [];
   const edges: Edge[] = [];
+
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+  const verticalSpacing = isMobile ? 65 : 100;
+  const initialHSpacing = isMobile 
+    ? Math.max(50, Math.min(85, (viewportWidth - 40) / 4)) 
+    : 240;
+  const startX = 500;
+  const startY = isMobile ? 40 : 60;
 
   const traverse = (node: TreeNode | null, x: number, y: number, hSpacing: number) => {
     if (!node) return;
@@ -46,18 +47,14 @@ const computeFlatLayout = (root: TreeNode | null) => {
     if (node.left) {
       const edgeId = node.id < node.left.id ? `${node.id}-${node.left.id}` : `${node.left.id}-${node.id}`;
       edges.push({ id: edgeId, from: node.id, to: node.left.id });
-      traverse(node.left as TreeNode, x - hSpacing, y + VERTICAL_SPACING, hSpacing * 0.5);
+      traverse(node.left as TreeNode, x - hSpacing, y + verticalSpacing, Math.max(25, hSpacing * 0.5));
     }
     if (node.right) {
       const edgeId = node.id < node.right.id ? `${node.id}-${node.right.id}` : `${node.right.id}-${node.id}`;
       edges.push({ id: edgeId, from: node.id, to: node.right.id });
-      traverse(node.right as TreeNode, x + hSpacing, y + VERTICAL_SPACING, hSpacing * 0.5);
+      traverse(node.right as TreeNode, x + hSpacing, y + verticalSpacing, Math.max(25, hSpacing * 0.5));
     }
   };
-
-  const startX = 500;
-  const startY = 60;
-  const initialHSpacing = 240;
 
   traverse(root, startX, startY, initialHSpacing);
 
@@ -68,7 +65,7 @@ const computeFlatLayout = (root: TreeNode | null) => {
  * Calculates absolute coordinates for Skip List nodes mapped by level lanes.
  * X coordinates align vertically matching Level 0 value positions.
  */
-const computeSkipListLayout = (nodes: SkipListNode[]) => {
+const computeSkipListLayout = (nodes: SkipListNode[], isMobile: boolean) => {
   const flat: { node: SkipListNode; x: number; y: number }[] = [];
   const edges: { id: string; from: string; to: string; isVertical?: boolean }[] = [];
 
@@ -95,10 +92,10 @@ const computeSkipListLayout = (nodes: SkipListNode[]) => {
     valueToIndex.set(n.value, idx);
   });
 
-  const H_SPACING = 85;
-  const V_SPACING = 80;
-  const startX = 80;
-  const startY = 420;
+  const H_SPACING = isMobile ? 55 : 85;
+  const V_SPACING = isMobile ? 55 : 80;
+  const startX = isMobile ? 50 : 80;
+  const startY = isMobile ? 320 : 420;
 
   nodes.forEach((n) => {
     let index = 0;
@@ -143,7 +140,7 @@ const computeSkipListLayout = (nodes: SkipListNode[]) => {
     }
   });
 
-  const width = Math.max(1000, 160 + sortedLevel0.length * H_SPACING);
+  const width = Math.max(isMobile ? 640 : 1000, startX * 2 + sortedLevel0.length * H_SPACING);
 
   return { flat, edges, width };
 };
@@ -171,17 +168,50 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
 
   const isSkipList = activeTab === 'skiplist';
 
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const nodeSize = isMobile ? 44 : 64;
+  const skipNodeWidth = isMobile ? 44 : 58;
+  const skipNodeHeight = isMobile ? 28 : 38;
+
   // Compute Layouts
   const { flat, edges, computedWidth } = useMemo(() => {
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
     if (isSkipList) {
       const listNodes = root?.skipListNodes as SkipListNode[] ?? [];
-      const res = computeSkipListLayout(listNodes);
+      const res = computeSkipListLayout(listNodes, isMobile);
       return { flat: res.flat, edges: res.edges, computedWidth: res.width };
     } else {
-      const res = computeFlatLayout(root as TreeNode | null);
-      return { flat: res.flat, edges: res.edges, computedWidth: 1000 };
+      const res = computeFlatLayout(root as TreeNode | null, isMobile);
+      if (res.flat.length === 0) {
+        return { flat: [], edges: [], computedWidth: isMobile ? viewportWidth - 32 : 1000 };
+      }
+      
+      const sortedX = [...res.flat].sort((a, b) => a.x - b.x);
+      const minX = sortedX[0].x;
+      const maxX = sortedX[sortedX.length - 1].x;
+      
+      const contentWidth = maxX - minX + (isMobile ? 80 : 160);
+      const width = Math.max(isMobile ? viewportWidth - 32 : 1000, contentWidth);
+      
+      // Shift elements to center the tree in the calculated width
+      const shiftX = width / 2 - 500;
+      const shiftedFlat = res.flat.map(f => ({
+        ...f,
+        x: f.x + shiftX
+      }));
+
+      return { flat: shiftedFlat, edges: res.edges, computedWidth: width };
     }
-  }, [root, isSkipList]);
+  }, [root, isSkipList, isMobile]);
 
   const coord = useMemo(() => {
     const m = new Map<string, { x: number; y: number }>();
@@ -196,36 +226,34 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
     if (!isSkipList || flat.length === 0) return [];
     const maxLvl = Math.max(0, ...Array.from(new Set(flat.map(f => (f.node as SkipListNode).level))));
     const lines = [];
+    const vSpacing = isMobile ? 55 : 80;
+    const startY = isMobile ? 320 : 420;
     for (let i = 0; i <= maxLvl; i++) {
       lines.push({
-        y: 420 - i * 80,
+        y: startY - i * vSpacing,
         label: `רמה ${i}`,
       });
     }
     return lines;
-  }, [isSkipList, flat]);
+  }, [isSkipList, flat, isMobile]);
 
   const hasContent = isSkipList ? (root?.skipListNodes?.length > 0) : !!root;
 
+  const computedHeight = useMemo(() => {
+    if (flat.length === 0) return 520;
+    let maxY = 0;
+    flat.forEach((f) => {
+      if (f.y !== undefined && f.y > maxY) {
+        maxY = f.y;
+      }
+    });
+    return Math.max(520, maxY + 60);
+  }, [flat]);
+
   return (
-    <div className={`relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner ${
-      isSkipList ? 'overflow-x-auto overflow-y-hidden' : 'overflow-hidden'
-    }`}>
+    <div className="relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner overflow-auto">
       {hasContent ? (
-        <TransformWrapper
-          wheel={{ disabled: false, step: 0.12 }}
-          pinch={{ disabled: false }}
-          doubleClick={{ disabled: true }}
-          panning={{ disabled: false }}
-          initialScale={1}
-          initialPositionX={0}
-          initialPositionY={0}
-        >
-          <TransformComponent
-            wrapperStyle={{ width: '100%', height: '100%', minHeight: '520px' }}
-            contentStyle={{ width: computedWidth, height: SVG_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'relative' }}>
+        <div style={{ width: computedWidth, height: computedHeight, position: 'relative', margin: '0 auto' }}>
               
               {/* Lane Lines Background for Skip List */}
               {isSkipList && (
@@ -248,10 +276,10 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
               <svg
                 className="absolute inset-0 block pointer-events-none"
                 width={computedWidth}
-                height={SVG_HEIGHT}
-                viewBox={`0 0 ${computedWidth} ${SVG_HEIGHT}`}
+                height={computedHeight}
+                viewBox={`0 0 ${computedWidth} ${computedHeight}`}
                 preserveAspectRatio="xMidYMid meet"
-                style={{ width: computedWidth, height: SVG_HEIGHT }}
+                style={{ width: computedWidth, height: computedHeight }}
               >
                 <g>
                   {edges.map((e) => {
@@ -283,7 +311,7 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
               </svg>
 
               {/* HTML Nodes Layer */}
-              <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'absolute', top: 0, left: 0 }}>
+              <div style={{ width: computedWidth, height: computedHeight, position: 'absolute', top: 0, left: 0 }}>
                 {flat.map((f) => {
                   const node = f.node;
                   const isInserted = currentStep?.highlightedNodeIds?.includes(node.id) && currentStep?.stepType === 'insert';
@@ -324,14 +352,14 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
                         layoutId={listNode.id}
                         initial={false}
                         animate={{
-                          x: f.x - SKIP_NODE_WIDTH / 2,
-                          y: f.y - SKIP_NODE_HEIGHT / 2,
+                          x: f.x - skipNodeWidth / 2,
+                          y: f.y - skipNodeHeight / 2,
                         }}
                         transition={{ type: 'spring', stiffness: 120, damping: 14 }}
                         className="absolute flex items-center justify-center rounded-lg shadow-md border"
                         style={{
-                          width: SKIP_NODE_WIDTH,
-                          height: SKIP_NODE_HEIGHT,
+                          width: skipNodeWidth,
+                          height: skipNodeHeight,
                           background: fill,
                           borderColor: border,
                           color: '#fff',
@@ -341,7 +369,7 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
                           touchAction: 'none',
                         }}
                       >
-                        <span style={{ fontWeight: 800, fontSize: 13, fontFamily: 'Outfit, sans-serif' }}>
+                        <span dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'embed', fontWeight: 800, fontSize: isMobile ? 11 : 13, fontFamily: 'Outfit, sans-serif' }}>
                           {listNode.isHead ? 'H' : listNode.isTail ? 'N' : listNode.value}
                         </span>
                       </motion.div>
@@ -385,14 +413,14 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
                       layoutId={node.id}
                       initial={false}
                       animate={{
-                        x: f.x - NODE_SIZE / 2,
-                        y: f.y - NODE_SIZE / 2,
+                        x: f.x - nodeSize / 2,
+                        y: f.y - nodeSize / 2,
                       }}
                       transition={{ type: 'spring', stiffness: 120, damping: 14 }}
                       className="absolute flex items-center justify-center rounded-full shadow-lg"
                       style={{
-                        width: NODE_SIZE,
-                        height: NODE_SIZE,
+                        width: nodeSize,
+                        height: nodeSize,
                         background: fill,
                         color: '#fff',
                         border: `3px solid ${border}`,
@@ -412,7 +440,7 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
                       ) : null}
                       
                       <div className="flex flex-col items-center justify-center text-center pointer-events-none">
-                        <div style={{ fontWeight: 800, fontSize: 18, fontFamily: 'Outfit, sans-serif' }}>
+                        <div dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'embed', fontWeight: 800, fontSize: isMobile ? 14 : 18, fontFamily: 'Outfit, sans-serif' }}>
                           {node.value}
                         </div>
                       </div>
@@ -422,8 +450,6 @@ const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
               </div>
 
             </div>
-          </TransformComponent>
-        </TransformWrapper>
       ) : (
         <div className="flex min-h-[520px] items-center justify-center text-slate-400">
           <div className="space-y-3 text-center">

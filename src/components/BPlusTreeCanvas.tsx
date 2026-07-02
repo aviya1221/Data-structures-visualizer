@@ -175,164 +175,164 @@ export const BPlusTreeCanvas: React.FC = () => {
   const layoutsList = Array.from(blockLayouts.values());
 
   return (
-    <div className="relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner overflow-x-auto overflow-y-hidden">
-      <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'relative' }}>
-        
-        {/* SVG Edges Layer */}
-        <svg
-          className="absolute inset-0 block pointer-events-none"
-          width={computedWidth}
-          height={SVG_HEIGHT}
-          viewBox={`0 0 ${computedWidth} ${SVG_HEIGHT}`}
-          style={{ width: computedWidth, height: SVG_HEIGHT }}
-        >
-          <defs>
-            <marker
-              id="arrow"
-              viewBox="0 0 10 10"
-              refX="6"
-              refY="5"
-              markerWidth="6"
-              markerHeight="6"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
-            </marker>
-          </defs>
-
-          {/* Parent-Child child branches */}
-          <g>
-            {parentEdges.map((e) => (
-              <motion.line
-                key={e.id}
-                initial={false}
-                animate={{
-                  x1: e.x1,
-                  y1: e.y1,
-                  x2: e.x2,
-                  y2: e.y2,
-                }}
-                transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-                stroke="#475569"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-              />
-            ))}
-          </g>
-
-          {/* Leaf Linked-List Range-Query paths */}
-          <g>
-            {leafNextEdges.map((e) => (
-              <motion.line
-                key={e.id}
-                initial={false}
-                animate={{
-                  x1: e.x1,
-                  y1: e.y1,
-                  x2: e.x2,
-                  y2: e.y2,
-                }}
-                transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-                stroke="#10b981"
-                strokeWidth={2.5}
-                strokeDasharray="4 3"
-                markerEnd="url(#arrow)"
-              />
-            ))}
-          </g>
-        </svg>
-
-        {/* HTML Node blocks */}
-        <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'absolute', top: 0, left: 0 }}>
-          {layoutsList.map((layout) => {
-            const { node, x, y, width, capacity } = layout;
+    <div className="relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner overflow-auto">
+      <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'relative', margin: '0 auto' }}>
             
-            const isHighlighted = highlightedNodeIds.has(node.id);
-            const isLeaf = node.isLeaf;
+            {/* SVG Edges Layer */}
+            <svg
+              className="absolute inset-0 block pointer-events-none"
+              width={computedWidth}
+              height={SVG_HEIGHT}
+              viewBox={`0 0 ${computedWidth} ${SVG_HEIGHT}`}
+              style={{ width: computedWidth, height: SVG_HEIGHT }}
+            >
+              <defs>
+                <marker
+                  id="arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                </marker>
+              </defs>
 
-            // Highlight border if active splitting or path traversal is occurring
-            const borderColor = isHighlighted
-              ? '#0ea5e9' // Sky blue glow
-              : isLeaf
-              ? '#1e293b' // Dark slate for leaves
-              : '#334155'; // Grey for index blocks
+              {/* Parent-Child child branches */}
+              <g>
+                {parentEdges.map((e) => (
+                  <motion.line
+                    key={e.id}
+                    initial={false}
+                    animate={{
+                      x1: e.x1,
+                      y1: e.y1,
+                      x2: e.x2,
+                      y2: e.y2,
+                    }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+                    stroke="#475569"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                  />
+                ))}
+              </g>
 
-            // Row 1 (Keys slots): capacity cells
-            const keySlots = Array.from({ length: capacity });
-            // Row 2 (Pointers slots): capacity + 1 cells
-            const pointerSlots = Array.from({ length: capacity + 1 });
-            const bottomCellWidth = width / (capacity + 1);
+              {/* Leaf Linked-List Range-Query paths */}
+              <g>
+                {leafNextEdges.map((e) => (
+                  <motion.line
+                    key={e.id}
+                    initial={false}
+                    animate={{
+                      x1: e.x1,
+                      y1: e.y1,
+                      x2: e.x2,
+                      y2: e.y2,
+                    }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    strokeDasharray="4 3"
+                    markerEnd="url(#arrow)"
+                  />
+                ))}
+              </g>
+            </svg>
 
-            return (
-              <motion.div
-                key={node.id}
-                layoutId={node.id}
-                initial={false}
-                animate={{
-                  x: x - width / 2,
-                  y: y - BLOCK_HEIGHT / 2,
-                }}
-                transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-                className="absolute flex flex-col bg-slate-900 rounded-lg shadow-md border-2 p-0.5 overflow-hidden"
-                style={{
-                  height: BLOCK_HEIGHT,
-                  width: width,
-                  borderColor: borderColor,
-                  left: 0,
-                  top: 0,
-                }}
-              >
-                {/* Row 1: Keys Row (LTR Forced) */}
-                <div dir="ltr" className="flex flex-row w-full h-[28px]">
-                  {keySlots.map((_, slotIdx) => {
-                    const keyVal = node.keys[slotIdx];
-                    const hasKey = keyVal !== undefined;
+            {/* HTML Node blocks */}
+            <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'absolute', top: 0, left: 0 }}>
+              {layoutsList.map((layout) => {
+                const { node, x, y, width, capacity } = layout;
+                
+                const isHighlighted = highlightedNodeIds.has(node.id);
+                const isLeaf = node.isLeaf;
 
-                    return (
-                      <div
-                        key={slotIdx}
-                        className="flex-1 h-full border-r last:border-r-0 border-slate-800 flex items-center justify-center relative select-none"
-                      >
-                        {hasKey ? (
-                          <motion.span
-                            layoutId={`val-${keyVal}`}
-                            className="font-extrabold text-sm text-slate-100"
-                            style={{ fontFamily: 'Outfit, sans-serif' }}
+                // Highlight border if active splitting or path traversal is occurring
+                const borderColor = isHighlighted
+                  ? '#0ea5e9' // Sky blue glow
+                  : isLeaf
+                  ? '#1e293b' // Dark slate for leaves
+                  : '#334155'; // Grey for index blocks
+
+                // Row 1 (Keys slots): capacity cells
+                const keySlots = Array.from({ length: capacity });
+                // Row 2 (Pointers slots): capacity + 1 cells
+                const pointerSlots = Array.from({ length: capacity + 1 });
+                const bottomCellWidth = width / (capacity + 1);
+
+                return (
+                  <motion.div
+                    key={node.id}
+                    layoutId={node.id}
+                    initial={false}
+                    animate={{
+                      x: x - width / 2,
+                      y: y - BLOCK_HEIGHT / 2,
+                    }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+                    className="absolute flex flex-col bg-slate-900 rounded-lg shadow-md border-2 p-0.5 overflow-hidden"
+                    style={{
+                      height: BLOCK_HEIGHT,
+                      width: width,
+                      borderColor: borderColor,
+                      left: 0,
+                      top: 0,
+                    }}
+                  >
+                    {/* Row 1: Keys Row (LTR Forced) */}
+                    <div dir="ltr" className="flex flex-row w-full h-[28px]">
+                      {keySlots.map((_, slotIdx) => {
+                        const keyVal = node.keys[slotIdx];
+                        const hasKey = keyVal !== undefined;
+
+                        return (
+                          <div
+                            key={slotIdx}
+                            className="flex-1 h-full border-r last:border-r-0 border-slate-800 flex items-center justify-center relative select-none"
                           >
-                            {keyVal}
-                          </motion.span>
-                        ) : (
-                          <span className="text-slate-700 font-bold text-xs">-</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            {hasKey ? (
+                              <motion.span
+                                layoutId={`val-${keyVal}`}
+                                className="font-extrabold text-sm text-slate-100"
+                                style={{ fontFamily: 'Outfit, sans-serif' }}
+                              >
+                                {keyVal}
+                              </motion.span>
+                            ) : (
+                              <span className="text-slate-700 font-bold text-xs">-</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                {/* Row 2: Pointer Dots Row (LTR Forced) */}
-                <div dir="ltr" className="flex flex-row w-full h-[28px] border-t border-slate-800">
-                  {pointerSlots.map((_, pIdx) => {
-                    // Decide if dot should be colored emerald for leaf sibling chain
-                    const isLastLeafPointer = isLeaf && pIdx === capacity;
-                    
-                    return (
-                      <div
-                        key={pIdx}
-                        className="border-r last:border-r-0 border-slate-800 flex items-center justify-center relative select-none"
-                        style={{ width: bottomCellWidth }}
-                      >
-                        <span className={`font-black text-sm ${isLastLeafPointer ? 'text-emerald-400' : 'text-slate-500'}`}>
-                          •
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                    {/* Row 2: Pointer Dots Row (LTR Forced) */}
+                    <div dir="ltr" className="flex flex-row w-full h-[28px] border-t border-slate-800">
+                      {pointerSlots.map((_, pIdx) => {
+                        // Decide if dot should be colored emerald for leaf sibling chain
+                        const isLastLeafPointer = isLeaf && pIdx === capacity;
+                        
+                        return (
+                          <div
+                            key={pIdx}
+                            className="border-r last:border-r-0 border-slate-800 flex items-center justify-center relative select-none"
+                            style={{ width: bottomCellWidth }}
+                          >
+                            <span className={`font-black text-sm ${isLastLeafPointer ? 'text-emerald-400' : 'text-slate-500'}`}>
+                              •
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
 
-              </motion.div>
-            );
-          })}
-        </div>
+                  </motion.div>
+                );
+              })}
+            </div>
 
       </div>
     </div>

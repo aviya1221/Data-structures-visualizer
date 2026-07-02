@@ -184,10 +184,10 @@ export const BinomialHeapCanvas: React.FC = () => {
                   touchAction: 'none',
                 }}
               >
-                <span className="font-extrabold text-sm" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                <span dir="ltr" className="font-extrabold text-sm" style={{ direction: 'ltr', unicodeBidi: 'embed', fontFamily: 'Outfit, sans-serif' }}>
                   {fn.node.value}
                 </span>
-                <span className="absolute -top-3 text-[10px] font-bold text-slate-500">
+                <span dir="ltr" className="absolute -top-3 text-[10px] font-bold text-slate-500" style={{ direction: 'ltr' }}>
                   deg: {fn.node.order}
                 </span>
               </motion.div>

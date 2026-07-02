@@ -128,3 +128,88 @@ export const generateSuffixTreeAnimations = (
 
   return steps;
 };
+
+export const generateSuffixSearchAnimations = (
+  currentNodes: SuffixTreeNode[],
+  rootId: string | null,
+  substring: string
+): Step[] => {
+  const steps: Step[] = [];
+  const nodesMap = new Map<string, SuffixTreeNode>();
+  currentNodes.forEach((n) => nodesMap.set(n.id, { ...n, children: [...n.children] }));
+
+  if (!rootId) {
+    steps.push({
+      id: `sf-search-empty`,
+      message: `העץ ריק. החיפוש נכשל.`,
+      rootNode: createDummyRoot(nodesMap, ''),
+      stepType: 'complete',
+    });
+    return steps;
+  }
+
+  const sanitized = substring.trim().toLowerCase();
+  if (!sanitized) return [];
+
+  const searchChars = [...sanitized]; // substring check (no '$' terminator required for contains check)
+
+  steps.push({
+    id: `sf-search-start-${sanitized}`,
+    message: `מתחיל חיפוש תת-המחרוזת "${sanitized}" בעץ הסיומת.`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    highlightedNodeIds: [rootId],
+    stepType: 'recolor',
+  });
+
+  let currId = rootId;
+  const path: string[] = [currId];
+  let failed = false;
+
+  for (let idx = 0; idx < searchChars.length; idx++) {
+    const char = searchChars[idx];
+    const currNode = nodesMap.get(currId)!;
+
+    let matchId = '';
+    for (const childId of currNode.children) {
+      const child = nodesMap.get(childId);
+      if (child && child.char === char) {
+        matchId = childId;
+        break;
+      }
+    }
+
+    if (matchId) {
+      currId = matchId;
+      path.push(currId);
+      steps.push({
+        id: `sf-search-match-${idx}-${char}`,
+        message: `נמצאה התאמה לאות "${char}". יורד לצומת זה.`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [...path],
+        stepType: 'insert',
+      });
+    } else {
+      failed = true;
+      steps.push({
+        id: `sf-search-fail-${idx}-${char}`,
+        message: `האות "${char}" לא קיימת בבניו של הצומת הנוכחי. החיפוש נכשל.`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [...path],
+        intenseHighlightId: currId,
+        stepType: 'imbalance',
+      });
+      break;
+    }
+  }
+
+  steps.push({
+    id: `sf-search-complete-${sanitized}`,
+    message: failed 
+      ? `החיפוש נכשל: תת-המחרוזת "${sanitized}" אינה קיימת בטקסט.`
+      : `החיפוש הושלם בהצלחה — תת-המחרוזת "${sanitized}" קיימת בטקסט!`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    stepType: 'complete',
+  });
+
+  return steps;
+};

@@ -1,12 +1,8 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { useAppStore } from '../app/store';
 import { type TrieNode } from '../structures/trie/types';
 
-const NODE_SIZE = 50;
-const V_SPACING = 85;
-const SVG_HEIGHT = 520;
 
 export const TrieCanvas: React.FC = () => {
   const { animationQueue, stepIndex, currentRoot } = useAppStore();
@@ -17,13 +13,28 @@ export const TrieCanvas: React.FC = () => {
 
   const highlightedNodeIds = new Set(currentStep?.highlightedNodeIds ?? []);
 
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const nodeSize = isMobile ? 38 : 50;
+  const vSpacing = isMobile ? 60 : 85;
+  const siblingGap = isMobile ? 22 : 35;
+  const baseLeafWidth = isMobile ? 32 : 45;
+
   // Compute Layouts
-  const { flatNodes, edges, computedWidth } = useMemo(() => {
+  const layoutData = useMemo(() => {
     const nodes: { node: TrieNode; x: number; y: number }[] = [];
     const eds: { id: string; from: string; to: string }[] = [];
 
     if (trieNodes.length === 0 || !rootId) {
-      return { flatNodes: nodes, edges: eds, computedWidth: 1000 };
+      return { flatNodes: nodes, edges: eds, computedWidth: 1000, computedHeight: 520 };
     }
 
     const nodesMap = new Map<string, TrieNode>();
@@ -37,8 +48,8 @@ export const TrieCanvas: React.FC = () => {
       if (!node) return 0;
       
       if (node.children.length === 0) {
-        widthsMap.set(nodeId, 45); // base leaf width
-        return 45;
+        widthsMap.set(nodeId, baseLeafWidth);
+        return baseLeafWidth;
       }
 
       let totalWidth = 0;
@@ -47,15 +58,16 @@ export const TrieCanvas: React.FC = () => {
       });
 
       // Add gaps between children
-      const totalGaps = (node.children.length - 1) * 35;
-      const computed = Math.max(45, totalWidth + totalGaps);
+      const totalGaps = (node.children.length - 1) * siblingGap;
+      const computed = Math.max(baseLeafWidth, totalWidth + totalGaps);
       
       widthsMap.set(nodeId, computed);
       return computed;
     };
 
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
     const treeWidth = computeWidth(rootId);
-    const cWidth = Math.max(1000, treeWidth + 240);
+    const cWidth = Math.max(isMobile ? viewportWidth - 32 : 1000, treeWidth + (isMobile ? 40 : 240));
 
     // 2. Position nodes recursively
     const layout = (nodeId: string, x: number, y: number) => {
@@ -64,7 +76,7 @@ export const TrieCanvas: React.FC = () => {
 
       nodes.push({ node, x, y });
 
-      const nodeWidth = widthsMap.get(nodeId) || 45;
+      const nodeWidth = widthsMap.get(nodeId) || baseLeafWidth;
       
       // Sort children alphabetically so they render in a consistent alphabetical order!
       const sortedChildren = [...node.children].sort((a, b) => {
@@ -76,9 +88,9 @@ export const TrieCanvas: React.FC = () => {
       let currentLeft = x - nodeWidth / 2;
 
       sortedChildren.forEach((childId) => {
-        const childWidth = widthsMap.get(childId) || 45;
+        const childWidth = widthsMap.get(childId) || baseLeafWidth;
         const childX = currentLeft + childWidth / 2;
-        const childY = y + V_SPACING;
+        const childY = y + vSpacing;
 
         eds.push({
           id: `te-${nodeId}-${childId}`,
@@ -87,14 +99,25 @@ export const TrieCanvas: React.FC = () => {
         });
 
         layout(childId, childX, childY);
-        currentLeft += childWidth + 35; // move boundary
+        currentLeft += childWidth + siblingGap; // move boundary
       });
     };
 
-    layout(rootId, cWidth / 2, 70);
+    layout(rootId, cWidth / 2, isMobile ? 50 : 70);
 
-    return { flatNodes: nodes, edges: eds, computedWidth: cWidth };
-  }, [trieNodes, rootId]);
+    let maxY = 0;
+    nodes.forEach((fn) => {
+      if (fn.y > maxY) {
+        maxY = fn.y;
+      }
+    });
+
+    const cHeight = Math.max(520, maxY + nodeSize / 2 + 40);
+
+    return { flatNodes: nodes, edges: eds, computedWidth: cWidth, computedHeight: cHeight };
+  }, [trieNodes, rootId, isMobile, nodeSize, vSpacing, siblingGap, baseLeafWidth]);
+
+  const { flatNodes, edges, computedWidth, computedHeight } = layoutData;
 
   const coord = useMemo(() => {
     const m = new Map<string, { x: number; y: number }>();
@@ -114,29 +137,16 @@ export const TrieCanvas: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner overflow-x-auto overflow-y-hidden">
-      <TransformWrapper
-        wheel={{ disabled: false, step: 0.12 }}
-        pinch={{ disabled: false }}
-        doubleClick={{ disabled: true }}
-        panning={{ disabled: false }}
-        initialScale={1}
-        initialPositionX={0}
-        initialPositionY={0}
-      >
-        <TransformComponent
-          wrapperStyle={{ width: '100%', height: '100%', minHeight: '520px' }}
-          contentStyle={{ width: computedWidth, height: SVG_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'relative' }}>
+    <div className="relative w-full h-full min-h-[520px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-4 shadow-inner overflow-auto">
+      <div style={{ width: computedWidth, height: computedHeight, position: 'relative', margin: '0 auto' }}>
             
             {/* SVG Edges Layer */}
             <svg
               className="absolute inset-0 block pointer-events-none"
               width={computedWidth}
-              height={SVG_HEIGHT}
-              viewBox={`0 0 ${computedWidth} ${SVG_HEIGHT}`}
-              style={{ width: computedWidth, height: SVG_HEIGHT }}
+              height={computedHeight}
+              viewBox={`0 0 ${computedWidth} ${computedHeight}`}
+              style={{ width: computedWidth, height: computedHeight }}
             >
               <g>
                 {edges.map((e) => {
@@ -164,25 +174,30 @@ export const TrieCanvas: React.FC = () => {
             </svg>
 
             {/* HTML Nodes Layer */}
-            <div style={{ width: computedWidth, height: SVG_HEIGHT, position: 'absolute', top: 0, left: 0 }}>
+            <div style={{ width: computedWidth, height: computedHeight, position: 'absolute', top: 0, left: 0 }}>
               {flatNodes.map((fn) => {
                 const node = fn.node;
                 const isRoot = node.char === '';
                 const isDollar = node.char === '$';
+                const isFailedNode = node.id === currentStep?.intenseHighlightId;
                 
                 const isHighlighted = highlightedNodeIds.has(node.id);
                 
                 // Color configuration
                 const fill = isRoot
                   ? '#0f172a' // slate-900 for root
+                  : isFailedNode
+                  ? '#991b1b' // red-800 for failed search node
                   : isDollar
                   ? '#991b1b' // red-800 for dollar end marker
                   : isHighlighted
                   ? '#16a34a' // green for search/insert highlight
                   : '#1e293b'; // base slate-800
 
-                const border = isHighlighted
-                  ? '#15803d'
+                const border = isFailedNode
+                  ? '#ef4444' // bright red border for failed node
+                  : isHighlighted
+                  ? '#22c55e' // bright green border for highlighted
                   : isRoot
                   ? '#334155'
                   : isDollar
@@ -198,16 +213,16 @@ export const TrieCanvas: React.FC = () => {
                     layoutId={node.id}
                     initial={false}
                     animate={{
-                      x: fn.x - NODE_SIZE / 2,
-                      y: fn.y - NODE_SIZE / 2,
+                      x: fn.x - nodeSize / 2,
+                      y: fn.y - nodeSize / 2,
                     }}
                     transition={{ type: 'spring', stiffness: 120, damping: 14 }}
                     className={`absolute flex items-center justify-center shadow-lg border-2 ${
                       isSquare ? 'rounded-lg' : 'rounded-full'
                     }`}
                     style={{
-                      width: NODE_SIZE,
-                      height: NODE_SIZE,
+                      width: nodeSize,
+                      height: nodeSize,
                       background: fill,
                       borderColor: border,
                       color: '#fff',
@@ -218,16 +233,14 @@ export const TrieCanvas: React.FC = () => {
                     }}
                   >
                     <span className="font-extrabold text-base uppercase" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                      {isRoot ? 'R' : node.char}
+                      {isRoot ? '' : node.char}
                     </span>
                   </motion.div>
                 );
               })}
             </div>
 
-          </div>
-        </TransformComponent>
-      </TransformWrapper>
+      </div>
     </div>
   );
 };

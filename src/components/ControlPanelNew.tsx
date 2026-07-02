@@ -7,8 +7,8 @@ import { createEmptySkipList } from '../structures/skiplist/skiplistAlgorithms';
 import { generateHeapInsertAnimations, generateHeapExtractMaxAnimations } from '../structures/heap/heapAnimations';
 import { generateBinomialInsertAnimations, generateBinomialExtractMinAnimations } from '../structures/binomial/binomialAnimations';
 import { generateBPlusInsertAnimations } from '../structures/bplus/bplusAnimations';
-import { generateTrieInsertAnimations } from '../structures/trie/trieAnimations';
-import { generateSuffixTreeAnimations } from '../structures/suffix/suffixAnimations';
+import { generateTrieInsertAnimations, generateTrieSearchAnimations } from '../structures/trie/trieAnimations';
+import { generateSuffixTreeAnimations, generateSuffixSearchAnimations } from '../structures/suffix/suffixAnimations';
 import { findTreeNodeByValue } from '../structures/tree/utils';
 import type { TreeNode } from '../structures/types';
 
@@ -35,6 +35,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
   } = useAppStore();
 
   const [inputValue, setInputValue] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [playMode, setPlayMode] = useState<'auto' | 'manual'>('auto');
   const toastTimer = useRef<number | null>(null);
   const currentTree = animationQueue.length > 0 ? animationQueue[stepIndex]?.rootNode : currentRoot as TreeNode | null;
@@ -177,6 +178,84 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
     setInputValue('');
   };
 
+  const handleSearch = () => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      handleToast('נא להזין ערך לחיפוש');
+      return;
+    }
+    if (!/^[a-zA-Z]+$/.test(query)) {
+      handleToast('נא להזין אותיות באנגלית בלבד');
+      return;
+    }
+
+    if (activeTab === 'trie') {
+      let trieNodes = (currentTree as any)?.trieNodes ?? [];
+      let rootId = (currentTree as any)?.rootId ?? null;
+
+      // If tree is empty, build PDF baseline tree of ['bear', 'bell', 'bid', 'bull', 'buy', 'sell', 'stock', 'stop']
+      if (trieNodes.length === 0 || !rootId) {
+        const baselineWords = ['bear', 'bell', 'bid', 'bull', 'buy', 'sell', 'stock', 'stop'];
+        let currentMap = new Map<string, any>();
+        
+        const genRootId = `tr_${Math.random().toString(36).substring(2, 9)}`;
+        currentMap.set(genRootId, { id: genRootId, char: '', isWordEnd: false, children: [] });
+        
+        baselineWords.forEach((word) => {
+          let currId = genRootId;
+          const chars = [...word, '$'];
+          chars.forEach((c) => {
+            const node = currentMap.get(currId)!;
+            let matchId = '';
+            for (const childId of node.children) {
+              const child = currentMap.get(childId);
+              if (child && child.char === c) {
+                matchId = childId;
+                break;
+              }
+            }
+            if (matchId) {
+              currId = matchId;
+            } else {
+              const newId = `tr_${Math.random().toString(36).substring(2, 9)}`;
+              currentMap.set(newId, { id: newId, char: c, isWordEnd: c === '$', children: [] });
+              node.children.push(newId);
+              currentMap.set(currId, node);
+              currId = newId;
+            }
+          });
+        });
+        
+        trieNodes = Array.from(currentMap.values());
+        rootId = genRootId;
+      }
+
+      const searchSteps = generateTrieSearchAnimations(trieNodes, rootId, query);
+      enqueue(searchSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setSearchQuery('');
+      return;
+    }
+
+    if (activeTab === 'suffix') {
+      let suffixNodes = (currentTree as any)?.suffixNodes ?? [];
+      let rootId = (currentTree as any)?.rootId ?? null;
+
+      // If tree is empty, build default word "banana"
+      if (suffixNodes.length === 0 || !rootId) {
+        const defaultWord = 'banana';
+        const buildSteps = generateSuffixTreeAnimations(defaultWord);
+        const finalStep = buildSteps[buildSteps.length - 1];
+        suffixNodes = (finalStep.rootNode as any).suffixNodes;
+        rootId = (finalStep.rootNode as any).rootId;
+      }
+
+      const searchSteps = generateSuffixSearchAnimations(suffixNodes, rootId, query);
+      enqueue(searchSteps, playMode === 'auto' ? 'playing' : 'paused');
+      setSearchQuery('');
+      return;
+    }
+  };
+
   const handleExtractMax = () => {
     const heap = (currentTree as any)?.heapArray ?? [];
     if (heap.length === 0) {
@@ -238,6 +317,31 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
           >
             הכנס
           </button>
+          
+          {(activeTab === 'trie' || activeTab === 'suffix') && (
+            <>
+              <div className="hidden sm:block h-6 w-px bg-slate-800" />
+              <input
+                type="text"
+                dir="ltr"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearch();
+                }}
+                disabled={isAnimating}
+                placeholder={activeTab === 'trie' ? 'חפש מילה' : 'חפש תת-מחרוזת'}
+                className="h-10 min-w-[120px] rounded-2xl border border-slate-700 bg-slate-950 px-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={isAnimating}
+                className="h-10 rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                חפש
+              </button>
+            </>
+          )}
           {activeTab === 'heap' && (
             <button
               onClick={handleExtractMax}

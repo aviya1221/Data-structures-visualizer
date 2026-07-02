@@ -129,3 +129,90 @@ export const generateTrieInsertAnimations = (
 
   return steps;
 };
+
+export const generateTrieSearchAnimations = (
+  currentNodes: TrieNode[],
+  rootId: string | null,
+  word: string
+): Step[] => {
+  const steps: Step[] = [];
+  const nodesMap = new Map<string, TrieNode>();
+  currentNodes.forEach((n) => nodesMap.set(n.id, { ...n, children: [...n.children] }));
+
+  if (!rootId) {
+    steps.push({
+      id: `tr-search-empty`,
+      message: `העץ ריק. החיפוש נכשל.`,
+      rootNode: createDummyRoot(nodesMap, ''),
+      stepType: 'complete',
+    });
+    return steps;
+  }
+
+  const sanitized = word.trim().toLowerCase();
+  if (!sanitized) return [];
+
+  const searchChars = [...sanitized, '$'];
+
+  steps.push({
+    id: `tr-search-start-${sanitized}`,
+    message: `מתחיל חיפוש המילה "${sanitized}" בעץ האחזור. נחפש נתיב צמתים המסתיים ב-$.`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    highlightedNodeIds: [rootId],
+    stepType: 'recolor',
+  });
+
+  let currId = rootId;
+  const path: string[] = [currId];
+  let failed = false;
+
+  for (let idx = 0; idx < searchChars.length; idx++) {
+    const char = searchChars[idx];
+    const currNode = nodesMap.get(currId)!;
+
+    let matchId = '';
+    for (const childId of currNode.children) {
+      const child = nodesMap.get(childId);
+      if (child && child.char === char) {
+        matchId = childId;
+        break;
+      }
+    }
+
+    if (matchId) {
+      currId = matchId;
+      path.push(currId);
+      steps.push({
+        id: `tr-search-match-${idx}-${char}`,
+        message: char === '$' 
+          ? `נמצא תו הקצה "$". המילה קיימת בעץ!`
+          : `נמצאה התאמה לאות "${char}". יורד לצומת זה.`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [...path],
+        stepType: 'insert',
+      });
+    } else {
+      failed = true;
+      steps.push({
+        id: `tr-search-fail-${idx}-${char}`,
+        message: char === '$'
+          ? `המילה "${sanitized}" היא תחילית של מילה אחרת, אך אינה מסתיימת ב-$. החיפוש נכשל.`
+          : `האות "${char}" לא קיימת בבניו של הצומת הנוכחי. החיפוש נכשל.`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [...path],
+        intenseHighlightId: currId,
+        stepType: 'imbalance',
+      });
+      break;
+    }
+  }
+
+  steps.push({
+    id: `tr-search-complete-${sanitized}`,
+    message: failed ? `החיפוש נכשל` : `החיפוש הושלם בהצלחה — המילה קיימת בעץ`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    stepType: 'complete',
+  });
+
+  return steps;
+};
