@@ -53,17 +53,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
     return () => window.clearTimeout(timeout);
   }, [animationQueue.length, currentStep?.stepType, nextStep, playback, speed, stepIndex]);
 
-  useEffect(() => {
-    if (animationQueue.length === 0) return;
-
-    if (playMode === 'manual' && playback === 'playing') {
-      setPlayback('paused');
-    }
-
-    if (playMode === 'auto' && playback === 'paused') {
-      setPlayback('playing');
-    }
-  }, [playMode, animationQueue.length, playback, setPlayback]);
 
   const handleToast = (message: string) => {
     setToast(message);
@@ -276,15 +265,32 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
     enqueue(newSteps, playMode === 'auto' ? 'playing' : 'paused');
   };
 
-  const handlePlayPause = () => {
-    if (playMode === 'manual') return;
-
-    if (playback === 'playing') {
+  const togglePlayMode = () => {
+    if (playMode === 'auto') {
+      setPlayMode('manual');
       setPlayback('paused');
+    } else {
+      setPlayMode('auto');
+      if (animationQueue.length > 0) {
+        setPlayback('playing');
+      }
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (animationQueue.length === 0) return;
+
+    if (playMode === 'manual') {
+      setPlayMode('auto');
+      setPlayback('playing');
       return;
     }
 
-    setPlayback('playing');
+    if (playback === 'playing') {
+      setPlayback('paused');
+    } else {
+      setPlayback('playing');
+    }
   };
 
   return (
@@ -377,7 +383,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
 
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => setPlayMode(playMode === 'auto' ? 'manual' : 'auto')}
+            onClick={togglePlayMode}
             className="h-10 rounded-2xl border border-slate-700 bg-slate-800 px-4 text-sm font-medium text-slate-100 transition hover:bg-slate-700"
           >
             {playMode === 'auto' ? 'מצב רצף' : 'מצב ידני'}
@@ -391,7 +397,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
           </button>
           <button
             onClick={handlePlayPause}
-            disabled={playMode === 'manual' || animationQueue.length === 0}
+            disabled={animationQueue.length === 0}
             className="h-10 rounded-2xl bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPlaying ? 'השהה' : 'הפעל'}
