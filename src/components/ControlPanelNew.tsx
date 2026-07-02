@@ -387,7 +387,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ activeTab }) => {
             disabled={isAnimating}
             className="h-10 rounded-2xl border border-slate-700 bg-slate-800 px-4 text-sm font-medium text-slate-100 disabled:cursor-not-allowed disabled:opacity-50 transition hover:bg-slate-700"
           >
-            ביטול
+            חזור
           </button>
           <button
             onClick={handlePlayPause}
