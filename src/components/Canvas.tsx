@@ -8,6 +8,7 @@ import BinomialHeapCanvas from './BinomialHeapCanvas';
 import BPlusTreeCanvas from './BPlusTreeCanvas';
 import TrieCanvas from './TrieCanvas';
 import SuffixTreeCanvas from './SuffixTreeCanvas';
+import SortingCanvas from './SortingCanvas';
 
 // Dimensions for Skip List boxes
 
@@ -146,6 +147,9 @@ const computeSkipListLayout = (nodes: SkipListNode[], isMobile: boolean) => {
 };
 
 const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
+  if (activeTab === 'sorting') {
+    return <SortingCanvas />;
+  }
   if (activeTab === 'heap') {
     return <MaxHeapCanvas />;
   }

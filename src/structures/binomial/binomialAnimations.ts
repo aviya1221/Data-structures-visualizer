@@ -17,19 +17,44 @@ const createDummyRoot = (binomialTrees: BinomialTreeNode[]): any => {
   };
 };
 
+// Helper to recursively find a node by value in the forest
+const findNodeByVal = (nodes: BinomialTreeNode[], val: number): BinomialTreeNode | null => {
+  for (const node of nodes) {
+    if (node.value === val) return node;
+    const found = findNodeByVal(node.children, val);
+    if (found) return found;
+  }
+  return null;
+};
+
+// Helper to find the path of ancestor nodes from a node ID up to the root of its tree
+const findAncestorPath = (
+  current: BinomialTreeNode,
+  targetId: string,
+  path: BinomialTreeNode[] = []
+): boolean => {
+  path.push(current);
+  if (current.id === targetId) return true;
+  for (const child of current.children) {
+    if (findAncestorPath(child, targetId, path)) {
+      return true;
+    }
+  }
+  path.pop();
+  return false;
+};
+
 /**
- * Generates insertion animation steps for a Binomial Heap.
+ * Generates insertion animation steps for a Min/Max Binomial Heap.
  */
 export const generateBinomialInsertAnimations = (
   currentHeap: BinomialTreeNode[],
-  newValue: number
+  newValue: number,
+  heapType: 'min' | 'max' = 'min'
 ): Step[] => {
   const steps: Step[] = [];
-  
-  // Clone current heap forest
   let heap = cloneBinomialHeap(currentHeap);
 
-  // 1. Create a B0 tree for newValue
   const newTreeId = generateBinomialNodeId();
   const newTree: BinomialTreeNode = {
     id: newTreeId,
@@ -40,14 +65,12 @@ export const generateBinomialInsertAnimations = (
 
   steps.push({
     id: `bn-insert-start-${newValue}`,
-    message: `הוספת ערך ${newValue} כעץ בינומי חדש מסדר 0 (B₀)`,
+    message: `הוספת ערך ${newValue} כעץ בינומי חדש מסדר 0 (B₀) — סוג: ${heapType === 'min' ? 'מינימום' : 'מקסימום'}`,
     rootNode: createDummyRoot([...heap, newTree]),
     highlightedNodeIds: [newTreeId],
     stepType: 'insert',
   });
 
-  // 2. Perform Heap Union (forest addition)
-  // Merge the two heaps sorted by order
   let mergedForest: BinomialTreeNode[] = [...heap, newTree].sort((a, b) => a.order - b.order);
   
   let i = 0;
@@ -56,45 +79,36 @@ export const generateBinomialInsertAnimations = (
     const t2 = mergedForest[i + 1];
 
     if (t1.order === t2.order) {
-      // Check if there is a third tree of the same order (carry propagation case)
       const t3 = (i + 2 < mergedForest.length) ? mergedForest[i + 2] : null;
-      
       if (t3 && t3.order === t1.order) {
-        // If we have three trees of same order (e.g. order k, k, k),
-        // we leave the first one and merge the next two.
         i++;
         continue;
       }
 
-      // Merge t1 and t2
-      const smaller = t1.value < t2.value ? t1 : t2;
-      const larger = t1.value < t2.value ? t2 : t1;
+      const t1IsParent = heapType === 'min' ? t1.value < t2.value : t1.value > t2.value;
+      const smaller = t1IsParent ? t1 : t2;
+      const larger = t1IsParent ? t2 : t1;
 
       steps.push({
         id: `bn-merge-prepare-${t1.id}-${t2.id}`,
-        message: `נמצאו שני עצים מסדר ${t1.order}. מכין מיזוג ביניהם. השורש הגדול (${larger.value}) יוכפף תחת השורש הקטן (${smaller.value}) לשמירת תכונת Min-Heap`,
+        message: `נמצאו שני עצים מסדר ${t1.order}. שורש ${larger.value} יוכפף תחת שורש ${smaller.value} לשמירת תכונת ${heapType === 'min' ? 'Min-Heap' : 'Max-Heap'}`,
         rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
         highlightedNodeIds: [t1.id, t2.id],
         stepType: 'recolor',
       });
 
-      // Perform merge
-      const mergedTree = mergeBinomialTrees(t1, t2);
-
-      // Remove the two old trees and insert the merged tree
+      const mergedTree = mergeBinomialTrees(t1, t2, heapType);
       mergedForest.splice(i, 2, mergedTree);
 
       steps.push({
         id: `bn-merge-complete-${mergedTree.id}`,
-        message: `הושלם מיזוג של שני עצי B${mergedTree.order - 1} לעץ B${mergedTree.order} אחד בעל שורש ${mergedTree.value}`,
+        message: `מיזוג עצי B${mergedTree.order - 1} לעץ B${mergedTree.order} אחד הושלם`,
         rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
         highlightedNodeIds: [mergedTree.id],
         stepType: 'rotation',
       });
 
-      // Re-sort to maintain ascending order of degrees
       mergedForest.sort((a, b) => a.order - b.order);
-      // Restart verification index to process any cascading order conflicts
       i = 0;
     } else {
       i++;
@@ -112,10 +126,11 @@ export const generateBinomialInsertAnimations = (
 };
 
 /**
- * Generates deletion / extraction of minimum (extract-min) steps for Binomial Heap.
+ * Generates deletion / extraction of the root (min/max) steps for Binomial Heap.
  */
-export const generateBinomialExtractMinAnimations = (
-  currentHeap: BinomialTreeNode[]
+export const generateBinomialExtractAnimations = (
+  currentHeap: BinomialTreeNode[],
+  heapType: 'min' | 'max' = 'min'
 ): Step[] => {
   const steps: Step[] = [];
   let heap = cloneBinomialHeap(currentHeap);
@@ -130,39 +145,39 @@ export const generateBinomialExtractMinAnimations = (
     return steps;
   }
 
-  // 1. Find the tree with the minimum root value
-  let minTreeIdx = 0;
+  // Find root node to extract (min or max)
+  let targetTreeIdx = 0;
   for (let i = 1; i < heap.length; i++) {
-    if (heap[i].value < heap[minTreeIdx].value) {
-      minTreeIdx = i;
+    const isBetter = heapType === 'min'
+      ? heap[i].value < heap[targetTreeIdx].value
+      : heap[i].value > heap[targetTreeIdx].value;
+    if (isBetter) {
+      targetTreeIdx = i;
     }
   }
 
-  const minTree = heap[minTreeIdx];
+  const targetTree = heap[targetTreeIdx];
 
   steps.push({
-    id: `bn-extract-start-${minTree.id}`,
-    message: `זיהוי השורש המינימלי בערימה: ${minTree.value} בעץ מסדר ${minTree.order}`,
+    id: `bn-extract-start-${targetTree.id}`,
+    message: `זיהוי השורש ה${heapType === 'min' ? 'מינימלי' : 'מקסימלי'} בערימה: ${targetTree.value} בעץ מסדר ${targetTree.order}`,
     rootNode: createDummyRoot(cloneBinomialHeap(heap)),
-    highlightedNodeIds: [minTree.id],
+    highlightedNodeIds: [targetTree.id],
     stepType: 'recolor',
   });
 
-  // 2. Remove the minTree from the forest
-  heap.splice(minTreeIdx, 1);
+  // Remove the targetTree from the forest
+  heap.splice(targetTreeIdx, 1);
 
   steps.push({
-    id: `bn-extract-remove-${minTree.id}`,
-    message: `הסרת השורש המינימלי (${minTree.value}). ילדיו של השורש יוצרים ערימה בינומית חדשה מסודרת לפי דרגות עולות`,
+    id: `bn-extract-remove-${targetTree.id}`,
+    message: `הסרת השורש (${targetTree.value}). ילדיו יוצרים ערימה בינומית חדשה מסודרת לפי דרגות עולות`,
     rootNode: createDummyRoot(cloneBinomialHeap(heap)),
     stepType: 'insert',
   });
 
-  // 3. The children of the removed root form a new binomial heap, ordered in ascending order of degree.
-  // In the tree, children are stored descending of order, so we reverse them.
-  const childrenHeap = [...minTree.children].reverse();
+  const childrenHeap = [...targetTree.children].reverse();
 
-  // Highlight union of the remaining heap and the children heap
   steps.push({
     id: `bn-union-start`,
     message: `ביצוע איחוד (Union) בין הערימה המקורית לבין ערימת הילדים החדשה`,
@@ -170,7 +185,6 @@ export const generateBinomialExtractMinAnimations = (
     stepType: 'insert',
   });
 
-  // Perform standard Union logic
   let mergedForest = [...heap, ...childrenHeap].sort((a, b) => a.order - b.order);
   
   let i = 0;
@@ -185,18 +199,19 @@ export const generateBinomialExtractMinAnimations = (
         continue;
       }
 
-      const smaller = t1.value < t2.value ? t1 : t2;
-      const larger = t1.value < t2.value ? t2 : t1;
+      const t1IsParent = heapType === 'min' ? t1.value < t2.value : t1.value > t2.value;
+      const smaller = t1IsParent ? t1 : t2;
+      const larger = t1IsParent ? t2 : t1;
 
       steps.push({
         id: `bn-union-merge-prepare-${t1.id}-${t2.id}`,
-        message: `מיזוג עצי דרגה ${t1.order} במהלך האיחוד: הורה ${smaller.value}, ילד ${larger.value}`,
+        message: `מיזוג עצי דרגה ${t1.order}: שורש ${smaller.value} הופך לאב של ${larger.value}`,
         rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
         highlightedNodeIds: [t1.id, t2.id],
         stepType: 'recolor',
       });
 
-      const mergedTree = mergeBinomialTrees(t1, t2);
+      const mergedTree = mergeBinomialTrees(t1, t2, heapType);
       mergedForest.splice(i, 2, mergedTree);
 
       steps.push({
@@ -216,7 +231,160 @@ export const generateBinomialExtractMinAnimations = (
 
   steps.push({
     id: `bn-extract-complete`,
-    message: `הפקת המינימום והאיחוד מחדש הושלמו בהצלחה`,
+    message: `תהליך הפקת השורש והאיחוד מחדש הושלם בהצלחה`,
+    rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
+    stepType: 'complete',
+  });
+
+  return steps;
+};
+
+/**
+ * Generates arbitrary value deletion animations for Min/Max Binomial Heap.
+ */
+export const generateBinomialDeleteAnimations = (
+  currentHeap: BinomialTreeNode[],
+  valueToDelete: number,
+  heapType: 'min' | 'max' = 'min'
+): Step[] => {
+  const steps: Step[] = [];
+  let heap = cloneBinomialHeap(currentHeap);
+
+  // 1. Find the target node
+  const targetNode = findNodeByVal(heap, valueToDelete);
+  if (!targetNode) {
+    steps.push({
+      id: `bn-delete-not-found`,
+      message: `הערך ${valueToDelete} אינו נמצא בערימה`,
+      rootNode: createDummyRoot(cloneBinomialHeap(heap)),
+      stepType: 'complete',
+    });
+    return steps;
+  }
+
+  steps.push({
+    id: `bn-delete-found`,
+    message: `הצומת המכיל את ${valueToDelete} נמצא. נבעבע אותו לשורש העץ שלו ע"י החלפות ערכים עם ההורים`,
+    rootNode: createDummyRoot(cloneBinomialHeap(heap)),
+    highlightedNodeIds: [targetNode.id],
+    stepType: 'recolor',
+  });
+
+  // 2. Find the path from root of its tree to targetNode
+  // First, identify which binomial tree contains the targetNode
+  let containingTreeIdx = -1;
+  let ancestorPath: BinomialTreeNode[] = [];
+
+  for (let idx = 0; idx < heap.length; idx++) {
+    const path: BinomialTreeNode[] = [];
+    if (findAncestorPath(heap[idx], targetNode.id, path)) {
+      containingTreeIdx = idx;
+      ancestorPath = path;
+      break;
+    }
+  }
+
+  // 3. Bubble up to the root of its tree (by swapping values with parents)
+  // ancestorPath contains [root, child, ..., targetNode]
+  let currIdx = ancestorPath.length - 1;
+  while (currIdx > 0) {
+    const parentNode = ancestorPath[currIdx - 1];
+    const currentNode = ancestorPath[currIdx];
+
+    steps.push({
+      id: `bn-delete-bubble-compare-${currentNode.id}-${parentNode.id}`,
+      message: `בעבוע למעלה: משווים בין ${currentNode.value} להורה שלו ${parentNode.value}`,
+      rootNode: createDummyRoot(cloneBinomialHeap(heap)),
+      highlightedNodeIds: [currentNode.id, parentNode.id],
+      stepType: 'recolor',
+    });
+
+    // Swap values
+    const tempVal = parentNode.value;
+    parentNode.value = currentNode.value;
+    currentNode.value = tempVal;
+
+    // Update ancestorPath array values to track the swapped state
+    // The node object reference is mutated, so the heap tree is updated
+    steps.push({
+      id: `bn-delete-bubble-swap-${currentNode.id}-${parentNode.id}`,
+      message: `מבצעים החלפת ערכים. הערך ${valueToDelete} עולה למעלה`,
+      rootNode: createDummyRoot(cloneBinomialHeap(heap)),
+      highlightedNodeIds: [currentNode.id, parentNode.id],
+      stepType: 'rotation',
+    });
+
+    currIdx--;
+  }
+
+  // 4. Now the value to delete is at the root of the tree at containingTreeIdx
+  const rootTree = heap[containingTreeIdx];
+  steps.push({
+    id: `bn-delete-at-root`,
+    message: `הערך ${valueToDelete} הגיע לשורש העץ שלו. כעת מסירים את השורש וממזגים את ילדיו`,
+    rootNode: createDummyRoot(cloneBinomialHeap(heap)),
+    highlightedNodeIds: [rootTree.id],
+    stepType: 'recolor',
+  });
+
+  // Extract the root tree
+  heap.splice(containingTreeIdx, 1);
+  const childrenHeap = [...rootTree.children].reverse();
+
+  steps.push({
+    id: `bn-delete-union`,
+    message: `איחוד ילדי העץ שהוסר עם שאר היער`,
+    rootNode: createDummyRoot([...heap, ...childrenHeap]),
+    stepType: 'insert',
+  });
+
+  let mergedForest = [...heap, ...childrenHeap].sort((a, b) => a.order - b.order);
+  
+  let uIdx = 0;
+  while (uIdx < mergedForest.length - 1) {
+    const t1 = mergedForest[uIdx];
+    const t2 = mergedForest[uIdx + 1];
+
+    if (t1.order === t2.order) {
+      const t3 = (uIdx + 2 < mergedForest.length) ? mergedForest[uIdx + 2] : null;
+      if (t3 && t3.order === t1.order) {
+        uIdx++;
+        continue;
+      }
+
+      const t1IsParent = heapType === 'min' ? t1.value < t2.value : t1.value > t2.value;
+      const smaller = t1IsParent ? t1 : t2;
+      const larger = t1IsParent ? t2 : t1;
+
+      steps.push({
+        id: `bn-delete-union-merge-prepare-${t1.id}-${t2.id}`,
+        message: `מיזוג עצי דרגה ${t1.order}: שורש ${smaller.value} הופך לאב של ${larger.value}`,
+        rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
+        highlightedNodeIds: [t1.id, t2.id],
+        stepType: 'recolor',
+      });
+
+      const mergedTree = mergeBinomialTrees(t1, t2, heapType);
+      mergedForest.splice(uIdx, 2, mergedTree);
+
+      steps.push({
+        id: `bn-delete-union-merge-complete-${mergedTree.id}`,
+        message: `מיזוג עצי B${mergedTree.order - 1} לעץ B${mergedTree.order} אחד הושלם`,
+        rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
+        highlightedNodeIds: [mergedTree.id],
+        stepType: 'rotation',
+      });
+
+      mergedForest.sort((a, b) => a.order - b.order);
+      uIdx = 0;
+    } else {
+      uIdx++;
+    }
+  }
+
+  steps.push({
+    id: `bn-delete-complete`,
+    message: `מחיקת ${valueToDelete} הושלמה בהצלחה. הערימה מאוזנת ותקינה`,
     rootNode: createDummyRoot(cloneBinomialHeap(mergedForest)),
     stepType: 'complete',
   });

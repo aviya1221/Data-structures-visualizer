@@ -28,12 +28,17 @@ export const cloneBinomialHeap = (heap: BinomialTreeNode[]): BinomialTreeNode[] 
  */
 export const mergeBinomialTrees = (
   t1: BinomialTreeNode,
-  t2: BinomialTreeNode
+  t2: BinomialTreeNode,
+  heapType: 'min' | 'max' = 'min'
 ): BinomialTreeNode => {
   const c1 = cloneBinomialTree(t1);
   const c2 = cloneBinomialTree(t2);
 
-  if (c1.value < c2.value) {
+  const t1IsParent = heapType === 'min'
+    ? c1.value < c2.value
+    : c1.value > c2.value;
+
+  if (t1IsParent) {
     return {
       ...c1,
       children: [c2, ...c1.children],

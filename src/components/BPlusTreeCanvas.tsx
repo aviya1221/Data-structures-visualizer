@@ -8,7 +8,7 @@ const BLOCK_HEIGHT = 64; // increased height to fit two rows
 const SVG_HEIGHT = 520;
 
 export const BPlusTreeCanvas: React.FC = () => {
-  const { animationQueue, stepIndex, currentRoot } = useAppStore();
+  const { animationQueue, stepIndex, currentRoot, bPlusBlockSize } = useAppStore();
   const currentStep = animationQueue[stepIndex];
   const root = (animationQueue.length > 0 ? currentStep?.rootNode : currentRoot) as any | null;
   const nodesArray: BPlusNode[] = root?.bplusNodes ?? [];
@@ -48,7 +48,7 @@ export const BPlusTreeCanvas: React.FC = () => {
     }
 
     const LEAF_GAP = 45;
-    const getBlockCapacity = (node: BPlusNode) => Math.max(3, node.keys.length);
+    const getBlockCapacity = (node: BPlusNode) => Math.max(bPlusBlockSize, node.keys.length);
     const getBlockWidth = (node: BPlusNode) => getBlockCapacity(node) * CELL_WIDTH;
     
     let totalLeavesWidth = 0;
@@ -295,7 +295,6 @@ export const BPlusTreeCanvas: React.FC = () => {
                           >
                             {hasKey ? (
                               <motion.span
-                                layoutId={`val-${keyVal}`}
                                 className="font-extrabold text-sm text-slate-100"
                                 style={{ fontFamily: 'Outfit, sans-serif' }}
                               >

@@ -216,3 +216,139 @@ export const generateTrieSearchAnimations = (
 
   return steps;
 };
+
+/**
+ * Generates Trie word deletion/pruning animations.
+ */
+export const generateTrieDeleteAnimations = (
+  currentNodes: TrieNode[],
+  rootId: string | null,
+  word: string
+): Step[] => {
+  const steps: Step[] = [];
+  const nodesMap = new Map<string, TrieNode>();
+  currentNodes.forEach((n) => nodesMap.set(n.id, { ...n, children: [...n.children] }));
+
+  if (!rootId) {
+    steps.push({
+      id: `tr-delete-empty`,
+      message: `העץ ריק. אין מה למחוק`,
+      rootNode: null,
+      stepType: 'complete',
+    });
+    return steps;
+  }
+
+  const sanitized = word.trim().toLowerCase();
+  if (!sanitized) return [];
+
+  const searchChars = [...sanitized, '$'];
+
+  steps.push({
+    id: `tr-delete-search-start`,
+    message: `חיפוש המילה "${sanitized}" למחיקה...`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    highlightedNodeIds: [rootId],
+    stepType: 'recolor',
+  });
+
+  let currId = rootId;
+  const path: string[] = [currId];
+  let failed = false;
+
+  for (let idx = 0; idx < searchChars.length; idx++) {
+    const char = searchChars[idx];
+    const currNode = nodesMap.get(currId)!;
+
+    let matchId = '';
+    for (const childId of currNode.children) {
+      const child = nodesMap.get(childId);
+      if (child && child.char === char) {
+        matchId = childId;
+        break;
+      }
+    }
+
+    if (matchId) {
+      currId = matchId;
+      path.push(currId);
+    } else {
+      failed = true;
+      break;
+    }
+  }
+
+  if (failed) {
+    steps.push({
+      id: `tr-delete-not-found`,
+      message: `המילה "${sanitized}" אינה קיימת בעץ האחזור`,
+      rootNode: createDummyRoot(nodesMap, rootId),
+      stepType: 'complete',
+    });
+    return steps;
+  }
+
+  steps.push({
+    id: `tr-delete-found`,
+    message: `המילה "${sanitized}" נמצאה. מתחילים מחיקה וגיזום מלמטה למעלה`,
+    rootNode: createDummyRoot(nodesMap, rootId),
+    highlightedNodeIds: [...path],
+    stepType: 'compare',
+  });
+
+  // Pruning phase from leaf back to root
+  // path is [root, char1, char2, ..., '$']
+  for (let i = path.length - 1; i > 0; i--) {
+    const nodeId = path[i];
+    const node = nodesMap.get(nodeId);
+    if (!node) continue;
+
+    const parentNodeId = path[i - 1];
+    const parentNode = nodesMap.get(parentNodeId);
+    if (!parentNode) continue;
+
+    // A node can be pruned if it has no children AND it does not represent another word end (not $)
+    // In our Trie: only '$' nodes have isWordEnd = true.
+    if (node.children.length === 0) {
+      steps.push({
+        id: `tr-delete-prune-node-${nodeId}`,
+        message: `גיזום: לצומת "${node.char}" אין ילדים נוספים. מוחקים אותו`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [nodeId, parentNodeId],
+        stepType: 'recolor',
+      });
+
+      // Remove from nodesMap
+      nodesMap.delete(nodeId);
+      // Remove from parent children
+      parentNode.children = parentNode.children.filter(cid => cid !== nodeId);
+      nodesMap.set(parentNodeId, parentNode);
+    } else {
+      steps.push({
+        id: `tr-delete-prune-stop-${nodeId}`,
+        message: `הגענו לצומת "${node.char}" שיש לו ילדים נוספים (משמש מילים אחרות). מפסיקים את הגיזום`,
+        rootNode: createDummyRoot(nodesMap, rootId),
+        highlightedNodeIds: [nodeId],
+        stepType: 'complete',
+      });
+      break;
+    }
+  }
+
+  // Check if root is now empty and has no children
+  let finalRootId = rootId;
+  const rootNode = nodesMap.get(rootId);
+  if (rootNode && rootNode.children.length === 0) {
+    nodesMap.delete(rootId);
+    finalRootId = '';
+  }
+
+  steps.push({
+    id: `tr-delete-complete`,
+    message: `מחיקת המילה "${sanitized}" הושלמה בהצלחה`,
+    rootNode: finalRootId ? createDummyRoot(nodesMap, finalRootId) : null,
+    stepType: 'complete',
+  });
+
+  return steps;
+};

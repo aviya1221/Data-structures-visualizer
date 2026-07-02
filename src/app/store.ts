@@ -6,15 +6,24 @@ export type PlaybackState = 'idle' | 'playing' | 'paused';
 export interface Step {
   id: string;
   message: string;
-  rootNode: TreeNode | null;
+  rootNode?: TreeNode | null;
   highlightedNodeIds?: string[];
   intenseHighlightId?: string;
-  stepType?: 'insert' | 'height' | 'imbalance' | 'recolor' | 'rotation' | 'balanced' | 'complete';
+  stepType?: 'insert' | 'height' | 'imbalance' | 'recolor' | 'rotation' | 'balanced' | 'complete' | 'compare' | 'swap' | 'pivot' | 'sorted';
   rotationCase?: string;
+
+  // Sorting Visualizer properties
+  arrayState?: number[];
+  highlightedIndices?: number[];
+  sortedIndices?: number[];
+  pivotIndex?: number;
+  countArrayState?: number[];
+  outputArrayState?: number[];
 }
 
 interface AppState {
   currentRoot: TreeNode | null;
+  currentArray: number[];
   playback: PlaybackState;
   speed: number;
   stepIndex: number;
@@ -22,6 +31,10 @@ interface AppState {
   stepHistory: Array<TreeNode | null>;
   isAnimating: boolean;
   toastMessage: string;
+  selectedSortingAlgorithm: 'heap' | 'quick' | 'merge' | 'insertion' | 'counting' | 'radix';
+  heapType: 'min' | 'max';
+  binomialHeapType: 'min' | 'max';
+  bPlusBlockSize: number;
 
   setPlayback: (state: PlaybackState) => void;
   setSpeed: (speed: number) => void;
@@ -31,10 +44,16 @@ interface AppState {
   nextStep: () => void;
   undo: () => void;
   reset: () => void;
+  setCurrentArray: (arr: number[]) => void;
+  setSelectedSortingAlgorithm: (algo: 'heap' | 'quick' | 'merge' | 'insertion' | 'counting' | 'radix') => void;
+  setHeapType: (type: 'min' | 'max') => void;
+  setBinomialHeapType: (type: 'min' | 'max') => void;
+  setBPlusBlockSize: (size: number) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   currentRoot: null,
+  currentArray: [14, 3, 8, 16, 2, 10, 7, 9, 1, 12], // default baseline array
   playback: 'idle',
   speed: 1,
   stepIndex: 0,
@@ -42,6 +61,10 @@ export const useAppStore = create<AppState>((set) => ({
   stepHistory: [],
   isAnimating: false,
   toastMessage: '',
+  selectedSortingAlgorithm: 'heap',
+  heapType: 'max',
+  binomialHeapType: 'min',
+  bPlusBlockSize: 3,
 
   setPlayback: (state) => set((prev) => ({
     playback: state,
@@ -71,9 +94,12 @@ export const useAppStore = create<AppState>((set) => ({
       return { stepIndex: state.stepIndex + 1 };
     }
 
-    const finalRoot = state.animationQueue[state.stepIndex]?.rootNode ?? state.currentRoot;
+    const lastStep = state.animationQueue[state.stepIndex];
+    const finalRoot = lastStep && lastStep.rootNode !== undefined ? lastStep.rootNode : state.currentRoot;
+    const finalArray = lastStep && lastStep.arrayState !== undefined ? lastStep.arrayState : state.currentArray;
     return {
       currentRoot: finalRoot,
+      currentArray: finalArray,
       animationQueue: [],
       stepIndex: 0,
       playback: 'idle',
@@ -95,8 +121,9 @@ export const useAppStore = create<AppState>((set) => ({
     };
   }),
 
-  reset: () => set({ 
+  reset: () => set((state) => ({ 
     currentRoot: null,
+    currentArray: [14, 3, 8, 16, 2, 10, 7, 9, 1, 12],
     playback: 'idle', 
     speed: 1,
     stepIndex: 0, 
@@ -104,5 +131,19 @@ export const useAppStore = create<AppState>((set) => ({
     stepHistory: [],
     isAnimating: false,
     toastMessage: '',
-  })
+    selectedSortingAlgorithm: state.selectedSortingAlgorithm,
+    heapType: state.heapType,
+    binomialHeapType: state.binomialHeapType,
+    bPlusBlockSize: state.bPlusBlockSize,
+  })),
+
+  setCurrentArray: (currentArray) => set({ currentArray }),
+
+  setSelectedSortingAlgorithm: (selectedSortingAlgorithm) => set({ selectedSortingAlgorithm }),
+
+  setHeapType: (heapType) => set({ heapType, currentRoot: null }),
+
+  setBinomialHeapType: (binomialHeapType) => set({ binomialHeapType, currentRoot: null }),
+
+  setBPlusBlockSize: (bPlusBlockSize) => set({ bPlusBlockSize, currentRoot: null })
 }));

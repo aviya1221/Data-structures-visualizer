@@ -14,6 +14,7 @@ const structureTabs = [
   { id: 'skiplist', label: 'רשימת דילוג' },
   { id: 'trie', label: 'עץ אחזור (Trie)' },
   { id: 'suffix', label: 'עץ סיומת' },
+  { id: 'sorting', label: 'מיונים' },
 ]
 
 const Visualizer = () => {
@@ -42,7 +43,7 @@ const Visualizer = () => {
   }
 
   return (
-    <div className="min-h-screen h-auto md:h-screen overflow-y-auto md:overflow-hidden bg-slate-950 text-slate-50">
+    <div className="min-h-screen h-auto md:h-screen flex flex-col overflow-y-auto md:overflow-hidden bg-slate-950 text-slate-50">
       <header className="relative md:sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-4 py-3 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex flex-col md:flex-row max-w-[1600px] items-center justify-between gap-3">
           <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-3">
@@ -83,7 +84,7 @@ const Visualizer = () => {
 
       </header>
 
-      <main className="mx-auto flex flex-col md:flex-row h-auto md:h-[calc(100vh-96px)] max-w-[1600px] gap-4 px-4 py-4 md:overflow-hidden">
+      <main className="mx-auto flex flex-col md:flex-row flex-1 md:h-0 w-full max-w-[1600px] gap-4 px-4 py-4 md:overflow-hidden">
         <aside className="flex w-full md:w-[360px] shrink-0 flex-col gap-4 overflow-hidden h-[300px] md:h-full order-last md:order-none">
           <StepLog />
         </aside>
@@ -156,8 +157,8 @@ const Visualizer = () => {
 
       {drawerOpen ? (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm">
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-slate-950 p-6 shadow-2xl shadow-slate-950/60">
-            <div className="mb-6 flex items-center justify-between">
+          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-slate-950 p-6 shadow-2xl shadow-slate-950/60 flex flex-col">
+            <div className="mb-6 flex items-center justify-between shrink-0">
               <h2 className="text-2xl font-semibold">
                 {`עקרונות ${structureTabs.find((tab) => tab.id === activeTab)?.label}`}
               </h2>

@@ -56,7 +56,7 @@ const flattenTree = (node: TreeNode | null, collector: Map<string, TreeNode>) =>
 const Canvas: React.FC<{ activeTab: string }> = ({ activeTab }) => {
   const { animationQueue, stepIndex, currentRoot } = useAppStore();
   const currentStep = animationQueue[stepIndex];
-  const root = animationQueue.length > 0 ? currentStep?.rootNode : currentRoot;
+  const root = (animationQueue.length > 0 ? currentStep?.rootNode : currentRoot) ?? null;
 
   const layoutedRoot = useMemo(() => cloneWithLayout(root), [root]);
   const bounds = useMemo(() => getTreeBounds(layoutedRoot), [layoutedRoot]);

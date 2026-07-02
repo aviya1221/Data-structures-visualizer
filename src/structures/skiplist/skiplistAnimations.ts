@@ -275,7 +275,7 @@ export const generateSkipListDeleteAnimations = (
       break;
     }
     if (!scan.next) break;
-    scan = nodesMap.get(scan.next)!;
+    scan = nodesMap.get(scan.next) ?? null;
   }
 
   if (!targetNode) {
@@ -293,7 +293,7 @@ export const generateSkipListDeleteAnimations = (
   let currToDelete: SkipListNode | null = targetNode;
   while (currToDelete) {
     nodeIdsToDelete.push(currToDelete.id);
-    currToDelete = currToDelete.up ? nodesMap.get(currToDelete.up)! : null;
+    currToDelete = currToDelete.up ? (nodesMap.get(currToDelete.up) ?? null) : null;
   }
 
   steps.push({
@@ -321,19 +321,22 @@ export const generateSkipListDeleteAnimations = (
   // Check if we have empty levels that should be cleaned up (except level 0)
   const maxLevel = getMaxLevel(nodesMap);
   for (let lvl = maxLevel; lvl > 0; lvl--) {
-    const headNode = findLevelHead(lvl, nodesMap)!;
-    const tailNode = findLevelTail(lvl, nodesMap)!;
+    const headNode = findLevelHead(lvl, nodesMap);
+    const tailNode = findLevelTail(lvl, nodesMap);
     
-    // If the only elements at this level are head and tail, delete them
-    if (headNode.next === tailNode.id) {
+    if (headNode && tailNode && headNode.next === tailNode.id) {
       // Disconnect down pointers from above if they exist
-      const belowHead = nodesMap.get(headNode.down!)!;
-      belowHead.up = null;
-      nodesMap.set(belowHead.id, belowHead);
+      const belowHead = headNode.down ? nodesMap.get(headNode.down) : null;
+      if (belowHead) {
+        belowHead.up = null;
+        nodesMap.set(belowHead.id, belowHead);
+      }
 
-      const belowTail = nodesMap.get(tailNode.down!)!;
-      belowTail.up = null;
-      nodesMap.set(belowTail.id, belowTail);
+      const belowTail = tailNode.down ? nodesMap.get(tailNode.down) : null;
+      if (belowTail) {
+        belowTail.up = null;
+        nodesMap.set(belowTail.id, belowTail);
+      }
 
       nodesMap.delete(headNode.id);
       nodesMap.delete(tailNode.id);
