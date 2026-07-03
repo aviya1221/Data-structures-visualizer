@@ -200,32 +200,25 @@ export const generateHeapExtractAnimations = (
 
   steps.push({
     id: `hp-extract-start`,
-    message: `החלפת שורש הערימה (${rootNode.value}) עם האיבר האחרון (${lastNode.value}) לצורך הסרתו`,
+    message: `שמירת הערך המקסימלי בשורש (${rootNode.value}) במשתנה max, והערכות להעתקת העלה הימני ביותר (${lastNode.value}) למקומו`,
     rootNode: createDummyRoot(A.filter(Boolean)),
     highlightedNodeIds: [rootNode.id, lastNode.id],
     stepType: 'recolor',
   });
 
-  // Swap root and last
-  A[1] = lastNode;
-  A[size] = rootNode;
-
-  steps.push({
-    id: `hp-extract-swap`,
-    message: `ביצוע החלפה בשורש`,
-    rootNode: createDummyRoot(A.filter(Boolean)),
-    highlightedNodeIds: [rootNode.id, lastNode.id],
-    stepType: 'rotation',
-  });
-
-  // Remove the last node
+  // Copy last node value to root and pop last node
+  A[1] = {
+    ...rootNode,
+    value: lastNode.value,
+  };
   A.pop();
   const heapSize = A.length - 1;
 
   steps.push({
-    id: `hp-extract-remove`,
-    message: `הסרת האיבר (${rootNode.value}) מהערימה. כעת נתקן את חוק הערימה מטה מהשורש`,
+    id: `hp-extract-copy-delete`,
+    message: `העתקת ערך העלה האחרון (${lastNode.value}) לשורש, ומחיקת העלה המקורי מהערימה. כעת נבצע תיקון מטה מהשורש`,
     rootNode: createDummyRoot(A.filter(Boolean)),
+    highlightedNodeIds: [rootNode.id],
     stepType: 'insert',
   });
 
@@ -290,32 +283,26 @@ export const generateHeapDeleteAnimations = (
   const lastNode = A[size];
 
   steps.push({
-    id: `hp-delete-swap-start`,
-    message: `מחיקת ${valueToDelete} ממיקום ${targetIdx}: מחליפים אותו עם האיבר האחרון (${lastNode.value}) במקום ${size}`,
+    id: `hp-delete-copy-start`,
+    message: `מחיקת ${valueToDelete} ממיקום ${targetIdx}: העתקת ערך האיבר האחרון (${lastNode.value}) במקומו`,
     rootNode: createDummyRoot(A.filter(Boolean)),
     highlightedNodeIds: [targetNode.id, lastNode.id],
     stepType: 'recolor',
   });
 
-  // Swap target and last
-  A[targetIdx] = lastNode;
-  A[size] = targetNode;
-
-  steps.push({
-    id: `hp-delete-swap`,
-    message: `ביצוע החלפה לצורך מחיקה`,
-    rootNode: createDummyRoot(A.filter(Boolean)),
-    highlightedNodeIds: [targetNode.id, lastNode.id],
-    stepType: 'rotation',
-  });
-
+  // Copy last node value to target index and pop last node
+  A[targetIdx] = {
+    ...targetNode,
+    value: lastNode.value,
+  };
   A.pop();
   const heapSize = A.length - 1;
 
   steps.push({
-    id: `hp-delete-remove`,
-    message: `הסרת האיבר (${valueToDelete}) מהערימה. כעת נתקן את חוק הערימה ממיקום ${targetIdx} (ערך: ${lastNode.value})`,
+    id: `hp-delete-copy-delete`,
+    message: `מחיקת העלה האחרון מהערימה. כעת נתקן את חוק הערימה ממיקום ${targetIdx} (ערך: ${lastNode.value})`,
     rootNode: createDummyRoot(A.filter(Boolean)),
+    highlightedNodeIds: [targetNode.id],
     stepType: 'insert',
   });
 

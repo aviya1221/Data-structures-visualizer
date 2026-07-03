@@ -116,9 +116,9 @@ const TheoryPanel = ({ activeTab }: TheoryPanelProps) => {
           <div>
             <h3 className="mb-3 text-xl font-semibold text-white">סיבוכיות זמן</h3>
             <div className="space-y-2 rounded-3xl bg-slate-950/80 p-4 text-sm text-slate-200">
-              <div>חיפוש: O(log_b n)</div>
-              <div>הכנסה: O(log_b n)</div>
-              <div>מחיקה: O(log_b n)</div>
+              <div>חיפוש: $O(\log_b n)$ (או $O(\log n)$ בחיפוש בינארי)</div>
+              <div>הכנסת איבר: $O(b \log_b n)$ (או $O(\log n)$ במבנה מאוזן המאפשר פיצול וחיבור)</div>
+              <div>מחיקת איבר: $O(b \log_b n)$ (או $O(\log n)$ במבנה מאוזן המאפשר פיצול וחיבור)</div>
             </div>
           </div>
         </>
@@ -137,8 +137,8 @@ const TheoryPanel = ({ activeTab }: TheoryPanelProps) => {
           <div>
             <h3 className="mb-3 text-xl font-semibold text-white">סיבוכיות זמן</h3>
             <div className="space-y-2 rounded-3xl bg-slate-950/80 p-4 text-sm text-slate-200">
-              <div>חיפוש מחרוזת באורך m: O(m)</div>
-              <div>הכנסת מחרוזת באורך m: O(m)</div>
+              <div>חיפוש: $O(m)$ (כאשר m הוא גודל השאילתא)</div>
+              <div>הוספת איבר: $O(n)$ (כאשר n הוא סכום האותיות של המילים במאגר)</div>
             </div>
           </div>
         </>

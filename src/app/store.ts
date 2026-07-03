@@ -61,7 +61,7 @@ export const useAppStore = create<AppState>((set) => ({
   stepHistory: [],
   isAnimating: false,
   toastMessage: '',
-  selectedSortingAlgorithm: 'heap',
+  selectedSortingAlgorithm: 'quick',
   heapType: 'max',
   binomialHeapType: 'min',
   bPlusBlockSize: 3,

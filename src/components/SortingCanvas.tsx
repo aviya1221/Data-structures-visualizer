@@ -151,7 +151,116 @@ export const SortingCanvas: React.FC = () => {
     );
   }
 
-  // 2. STANDARD & RADIX SORT CARD LIST LAYOUT
+  // 2. HEAP SORT DOUBLE ARRAY VISUALIZATION
+  if (selectedSortingAlgorithm === 'heap') {
+    const n = array.length;
+    const heapSize = n - sorted.size;
+    const heapArray = array.slice(0, heapSize);
+
+    return (
+      <div className="relative w-full h-full min-h-[440px] rounded-[1.75rem] border border-slate-800 bg-slate-950 p-6 shadow-inner flex flex-col justify-between overflow-x-auto select-none" dir="ltr">
+        <div className="space-y-8 min-w-[600px] py-4">
+          
+          {/* Row 1: Active Heap Array */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-left">מערך הערימה הפעילה (Heap Array)</h3>
+            <div className="flex gap-2">
+              {heapArray.length > 0 ? (
+                heapArray.map((val, idx) => {
+                  const isHighlighted = highlighted.has(idx);
+                  
+                  let bg = 'bg-slate-900/80';
+                  let border = 'border-slate-800';
+                  let text = 'text-slate-100';
+                  let glow = 'none';
+
+                  if (isHighlighted) {
+                    bg = 'bg-amber-500/20';
+                    border = 'border-amber-500';
+                    text = 'text-amber-300';
+                    glow = '0 0 14px rgba(245, 158, 11, 0.25)';
+                  }
+
+                  return (
+                    <div key={`h-active-${idx}`} className="flex flex-col items-center">
+                      <div 
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold border transition ${bg} ${border} ${text}`}
+                        style={{ boxShadow: glow }}
+                      >
+                        {val}
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-650 mt-1">[{idx + 1}]</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-sm text-slate-500 italic py-2 pl-2 text-left">ערימה ריקה (המיון הושלם)</div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Original/Sorted Array */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-left">המערך הממוין (Sorted / Original Array)</h3>
+            <div className="flex gap-2">
+              {array.map((val, idx) => {
+                const isHighlighted = highlighted.has(idx);
+                const isSorted = sorted.has(idx);
+
+                let bg = 'bg-slate-900/80';
+                let border = 'border-slate-800';
+                let text = 'text-slate-100';
+                let glow = 'none';
+
+                if (isSorted) {
+                  bg = 'bg-emerald-500/20';
+                  border = 'border-emerald-500';
+                  text = 'text-emerald-300';
+                  glow = '0 0 14px rgba(16, 185, 129, 0.25)';
+                } else if (isHighlighted) {
+                  bg = 'bg-amber-500/20';
+                  border = 'border-amber-500';
+                  text = 'text-amber-300';
+                  glow = '0 0 14px rgba(245, 158, 11, 0.25)';
+                }
+
+                return (
+                  <div key={`h-orig-${idx}`} className="flex flex-col items-center">
+                    <div 
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold border transition ${bg} ${border} ${text}`}
+                      style={{ boxShadow: glow }}
+                    >
+                      {val}
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-650 mt-1">[{idx + 1}]</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Legend */}
+        <div className="border-t border-slate-900 pt-4 flex flex-wrap gap-4 items-center justify-center text-xs text-slate-400 select-none">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-slate-900 border border-slate-800" />
+            <span>איבר בערימה (לא ממוין)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500" />
+            <span>השוואה / החלפה פעילה</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500" />
+            <span>ממוין סופית (הוצא מהערימה)</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. STANDARD & RADIX SORT CARD LIST LAYOUT
   const isRadix = selectedSortingAlgorithm === 'radix';
   const activeExp = isRadix ? pivotIndex : -1; // pivotIndex holds the exp divisor
 
